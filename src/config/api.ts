@@ -19,7 +19,9 @@ export const API_CONFIG = {
 
 // Binance API Configuration
 export const BINANCE_CONFIG = {
-  BASE_URL: 'https://api.binance.com',
+  // Use data-api.binance.vision instead of api.binance.com to avoid HTTP 451 errors
+  // data-api.binance.vision works for public market data from ANY location
+  BASE_URL: 'https://data-api.binance.vision',
   WS_URL: 'wss://stream.binance.com:9443/ws',
 
   ENDPOINTS: {
