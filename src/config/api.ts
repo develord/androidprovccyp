@@ -1,7 +1,8 @@
 // API Configuration
 export const API_CONFIG = {
-  // Production API sur Render.com
-  BASE_URL: 'https://crypprovid.onrender.com',
+  // Production API sur Fly.io (migré depuis Render.com - économie de $15/mois)
+  BASE_URL: 'https://cryptoadviser-api.fly.dev',
+  // Ancienne URL Render: 'https://crypprovid.onrender.com'
   // Pour développement local:
   // - Android Emulator: 'http://10.0.2.2:8000'
   // - Device physique avec adb reverse: 'http://localhost:8000'

@@ -51,15 +51,33 @@ class APIService {
         return cached;
       }
 
-      const response = await this.client.get(API_CONFIG.ENDPOINTS.PREDICTIONS_ALL);
-      const data = response.data;
+      const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.PREDICTIONS_ALL;
+      console.log('Fetching predictions from:', url);
 
-      // Cache the result
-      this.setCache('all_predictions', data);
+      // Try with native fetch first
+      try {
+        const fetchResponse = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        console.log('Fetch response status:', fetchResponse.status);
+        const data = await fetchResponse.json();
+        console.log('Fetch response received successfully');
 
-      return data;
-    } catch (error) {
+        // Cache the result
+        this.setCache('all_predictions', data);
+        return data;
+      } catch (fetchError: any) {
+        console.error('Fetch failed, error:', fetchError.message);
+        throw fetchError;
+      }
+    } catch (error: any) {
       console.error('Error fetching all predictions:', error);
+      console.error('Error message:', error.message);
+      console.error('Error code:', error.code);
+      console.error('Error stack:', error.stack);
       throw new Error('Failed to fetch predictions');
     }
   }

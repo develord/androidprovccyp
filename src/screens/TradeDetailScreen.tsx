@@ -17,6 +17,8 @@ import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } fro
 import { RootStackParamList, VirtualTrade } from '../types';
 import VirtualTradeService from '../services/virtualTradeService';
 import BinanceService from '../services/binanceService';
+import { useLivePrice } from '../hooks/useLivePrice';
+import tradeMonitoringService from '../services/tradeMonitoringService';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'TradeDetail'>;
 
@@ -26,8 +28,34 @@ const TradeDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const [trade, setTrade] = useState<VirtualTrade>(initialTrade);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Use live WebSocket price updates for open trades
+  const { price: livePrice, isConnected } = useLivePrice({
+    symbol: trade.symbol,
+    enabled: trade.status === 'open',
+    onPriceUpdate: async (price) => {
+      // Update trade with live price
+      const updatedTrade = await VirtualTradeService.updateTradePrice(trade.id, price);
+      if (updatedTrade) {
+        setTrade(updatedTrade);
+      }
+    },
+  });
+
   useEffect(() => {
-    updatePrice();
+    // Initial price update for closed trades
+    if (trade.status !== 'open') {
+      updatePrice();
+    }
+
+    // Add trade to monitoring service (for background notifications)
+    if (trade.status === 'open') {
+      tradeMonitoringService.addTradeToMonitor(trade.id);
+    }
+
+    // Cleanup: remove from monitoring when leaving screen
+    return () => {
+      // Keep monitoring in background unless user manually closes trade
+    };
   }, []);
 
   const updatePrice = async () => {
@@ -166,13 +194,34 @@ const TradeDetailScreen: React.FC<Props> = ({ navigation, route }) => {
             <Text style={styles.name}>{trade.name}</Text>
           </View>
 
-          <View style={[
-            styles.statusBadge,
-            { backgroundColor: `${getStatusColor(trade.status)}20` }
-          ]}>
-            <Text style={[styles.statusText, { color: getStatusColor(trade.status) }]}>
-              {getStatusLabel(trade.status)}
-            </Text>
+          <View style={styles.statusRow}>
+            <View style={[
+              styles.statusBadge,
+              { backgroundColor: `${getStatusColor(trade.status)}20` }
+            ]}>
+              <Text style={[styles.statusText, { color: getStatusColor(trade.status) }]}>
+                {getStatusLabel(trade.status)}
+              </Text>
+            </View>
+
+            {/* Live WebSocket Indicator */}
+            {trade.status === 'open' && (
+              <View style={[
+                styles.liveIndicator,
+                { backgroundColor: isConnected ? `${COLORS.success}20` : `${COLORS.textSecondary}20` }
+              ]}>
+                <View style={[
+                  styles.liveDot,
+                  { backgroundColor: isConnected ? COLORS.success : COLORS.textSecondary }
+                ]} />
+                <Text style={[
+                  styles.liveText,
+                  { color: isConnected ? COLORS.success : COLORS.textSecondary }
+                ]}>
+                  {isConnected ? 'LIVE' : 'OFFLINE'}
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Signal & Confidence */}
@@ -425,16 +474,39 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.md,
     color: COLORS.textSecondary,
   },
+  statusRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.md,
+  },
   statusBadge: {
-    alignSelf: 'center',
     paddingHorizontal: SPACING.md,
     paddingVertical: SPACING.sm,
     borderRadius: BORDER_RADIUS.md,
-    marginBottom: SPACING.md,
   },
   statusText: {
     fontSize: FONT_SIZES.md,
     fontWeight: FONT_WEIGHTS.bold,
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.md,
+    gap: SPACING.xs,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  liveText: {
+    fontSize: FONT_SIZES.xs,
+    fontWeight: FONT_WEIGHTS.bold,
+    letterSpacing: 0.5,
   },
   signalRow: {
     flexDirection: 'row',
