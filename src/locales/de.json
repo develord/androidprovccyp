@@ -1,0 +1,43 @@
+{
+  "appName": "Crypto Adviser",
+  "subtitle": "KI-gestützte Handelssignale",
+  "home": "Startseite",
+  "settings": "Einstellungen",
+  "allCryptocurrencies": "Alle Kryptowährungen",
+  "loading": "Vorhersagen werden geladen...",
+  "error": "Fehler beim Laden der Vorhersagen. Bitte überprüfen Sie, ob die API ausgeführt wird.",
+  "errorHint": "Stellen Sie sicher, dass der API-Server auf Port 8000 ausgeführt wird",
+  "confidence": "Vertrauen",
+  "target": "Ziel",
+  "stopLoss": "Stop Loss",
+  "updated": "Aktualisiert",
+  "livePrice": "Live-Preis",
+  "additionalInfo": "Zusätzliche Informationen",
+  "cryptoId": "Krypto-ID",
+  "symbol": "Symbol",
+  "modelTimestamp": "Modell-Zeitstempel",
+  "poweredBy": "Unterstützt von XGBoost V6 ML Models & Binance API",
+
+  "settings_title": "Einstellungen",
+  "language": "Sprache",
+  "selectLanguage": "Sprache auswählen",
+  "aboutApp": "Über die App",
+  "appVersion": "Version",
+  "appDescription": "Crypto Adviser ist eine KI-gestützte Handelssignalanwendung, die Echtzeit-Kryptowährungsvorhersagen mit fortschrittlichen Machine-Learning-Modellen liefert.",
+  "features": "Funktionen",
+  "feature1": "Echtzeit-Krypto-Preisverfolgung",
+  "feature2": "KI-gestützte Handelssignale (KAUFEN/VERKAUFEN/HALTEN)",
+  "feature3": "Risikomanagement-Berechnungen",
+  "feature4": "Mehrsprachige Unterstützung",
+  "feature5": "Live-Marktdaten von Binance",
+  "developer": "Entwickler",
+  "contact": "Kontakt",
+
+  "languages": {
+    "en": "English",
+    "fr": "Français",
+    "ar": "العربية",
+    "es": "Español",
+    "de": "Deutsch"
+  }
+}

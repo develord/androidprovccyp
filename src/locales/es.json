@@ -1,0 +1,43 @@
+{
+  "appName": "Crypto Adviser",
+  "subtitle": "Señales de Trading con IA",
+  "home": "Inicio",
+  "settings": "Ajustes",
+  "allCryptocurrencies": "Todas las criptomonedas",
+  "loading": "Cargando predicciones...",
+  "error": "Error al cargar las predicciones. Por favor, verifique si la API está funcionando.",
+  "errorHint": "Asegúrese de que el servidor API esté ejecutándose en el puerto 8000",
+  "confidence": "Confianza",
+  "target": "Objetivo",
+  "stopLoss": "Stop Loss",
+  "updated": "Actualizado",
+  "livePrice": "Precio en vivo",
+  "additionalInfo": "Información adicional",
+  "cryptoId": "ID Cripto",
+  "symbol": "Símbolo",
+  "modelTimestamp": "Marca de tiempo del modelo",
+  "poweredBy": "Impulsado por XGBoost V6 ML Models & Binance API",
+
+  "settings_title": "Ajustes",
+  "language": "Idioma",
+  "selectLanguage": "Seleccionar idioma",
+  "aboutApp": "Acerca de la aplicación",
+  "appVersion": "Versión",
+  "appDescription": "Crypto Adviser es una aplicación de señales de trading impulsada por IA que proporciona predicciones de criptomonedas en tiempo real utilizando modelos de aprendizaje automático avanzados.",
+  "features": "Características",
+  "feature1": "Seguimiento de precios cripto en tiempo real",
+  "feature2": "Señales de trading con IA (COMPRAR/VENDER/MANTENER)",
+  "feature3": "Cálculos de gestión de riesgos",
+  "feature4": "Soporte multiidioma",
+  "feature5": "Datos de mercado en vivo desde Binance",
+  "developer": "Desarrollador",
+  "contact": "Contacto",
+
+  "languages": {
+    "en": "English",
+    "fr": "Français",
+    "ar": "العربية",
+    "es": "Español",
+    "de": "Deutsch"
+  }
+}
