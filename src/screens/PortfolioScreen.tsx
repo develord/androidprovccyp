@@ -31,8 +31,13 @@ const PortfolioScreen: React.FC<Props> = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       loadTrades();
-    }, [filter])
+    }, [])
   );
+
+  // Reload when filter changes
+  useEffect(() => {
+    loadTrades();
+  }, [filter]);
 
   const loadTrades = async () => {
     try {
