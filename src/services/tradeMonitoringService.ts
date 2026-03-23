@@ -5,10 +5,13 @@ import virtualTradeService from './virtualTradeService';
 import binanceWebSocketService from './binanceWebSocketService';
 import { VirtualTrade } from '../types';
 
+type PriceCallback = (symbol: string, price: number) => void;
+
 class TradeMonitoringService {
   private isMonitoring: boolean = false;
   private appState: AppStateStatus = 'active';
   private monitoredTrades: Map<string, VirtualTrade> = new Map();
+  private tradeCallbacks: Map<string, PriceCallback> = new Map(); // Store callbacks by trade ID
 
   constructor() {
     // Configure push notifications
@@ -36,7 +39,7 @@ class TradeMonitoringService {
       },
 
       popInitialNotification: true,
-      requestPermissions: true,
+      requestPermissions: false, // Changed to false - we only use local notifications, not Firebase
     });
 
     // Create notification channel for Android
@@ -104,7 +107,8 @@ class TradeMonitoringService {
 
     console.log(`[TradeMonitor] Subscribing to ${symbol} for trade ${id}`);
 
-    binanceWebSocketService.subscribe(symbol, async (receivedSymbol, price) => {
+    // Create and store the callback
+    const callback: PriceCallback = async (receivedSymbol, price) => {
       if (receivedSymbol !== symbol) return;
 
       console.log(`[TradeMonitor] Price update for ${symbol}: ${price}`);
@@ -126,7 +130,11 @@ class TradeMonitoringService {
         this.sendTradeNotification(updatedTrade);
 
         // Unsubscribe from this trade
-        binanceWebSocketService.unsubscribe(symbol, () => {});
+        const storedCallback = this.tradeCallbacks.get(id);
+        if (storedCallback) {
+          binanceWebSocketService.unsubscribe(symbol, storedCallback);
+          this.tradeCallbacks.delete(id);
+        }
         this.monitoredTrades.delete(id);
 
         // Stop monitoring if no more trades
@@ -137,7 +145,13 @@ class TradeMonitoringService {
         // Update local cache
         this.monitoredTrades.set(id, updatedTrade);
       }
-    });
+    };
+
+    // Store the callback
+    this.tradeCallbacks.set(id, callback);
+
+    // Subscribe with the stored callback
+    binanceWebSocketService.subscribe(symbol, callback);
   }
 
   // Send push notification for trade result
@@ -186,9 +200,16 @@ class TradeMonitoringService {
     console.log('[TradeMonitor] Stopping trade monitoring...');
     this.isMonitoring = false;
 
-    // Unsubscribe from all WebSocket connections
-    binanceWebSocketService.cleanup();
+    // Unsubscribe from each trade individually
+    this.monitoredTrades.forEach((trade, tradeId) => {
+      const callback = this.tradeCallbacks.get(tradeId);
+      if (callback) {
+        binanceWebSocketService.unsubscribe(trade.symbol, callback);
+      }
+    });
+
     this.monitoredTrades.clear();
+    this.tradeCallbacks.clear();
   }
 
   // Add new trade to monitoring
@@ -217,7 +238,14 @@ class TradeMonitoringService {
     }
 
     console.log(`[TradeMonitor] Removing trade ${tradeId} from monitoring`);
-    binanceWebSocketService.unsubscribe(trade.symbol, () => {});
+
+    // Unsubscribe using the stored callback
+    const callback = this.tradeCallbacks.get(tradeId);
+    if (callback) {
+      binanceWebSocketService.unsubscribe(trade.symbol, callback);
+      this.tradeCallbacks.delete(tradeId);
+    }
+
     this.monitoredTrades.delete(tradeId);
 
     if (this.monitoredTrades.size === 0) {

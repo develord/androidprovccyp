@@ -1,5 +1,5 @@
 // TradeDetailScreen - Detailed view of a virtual trade with price history
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -28,17 +28,22 @@ const TradeDetailScreen: React.FC<Props> = ({ navigation, route }) => {
   const [trade, setTrade] = useState<VirtualTrade>(initialTrade);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Memoize the price update callback to prevent unnecessary re-subscriptions
+  const handlePriceUpdate = useCallback(async (price: number) => {
+    console.log(`[TradeDetail] Price update: ${price} for trade ${trade.id}`);
+    // Update trade with live price
+    const updatedTrade = await VirtualTradeService.updateTradePrice(trade.id, price);
+    if (updatedTrade) {
+      console.log(`[TradeDetail] Trade updated with new price`);
+      setTrade(updatedTrade);
+    }
+  }, [trade.id]);
+
   // Use live WebSocket price updates for open trades
   const { price: livePrice, isConnected } = useLivePrice({
     symbol: trade.symbol,
     enabled: trade.status === 'open',
-    onPriceUpdate: async (price) => {
-      // Update trade with live price
-      const updatedTrade = await VirtualTradeService.updateTradePrice(trade.id, price);
-      if (updatedTrade) {
-        setTrade(updatedTrade);
-      }
-    },
+    onPriceUpdate: handlePriceUpdate,
   });
 
   useEffect(() => {

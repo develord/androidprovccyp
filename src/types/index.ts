@@ -111,6 +111,7 @@ export type RootStackParamList = {
   HomeTabs: NavigatorScreenParams<TabParamList> | undefined;
   Detail: { crypto: CryptoPrediction };
   TradeDetail: { trade: VirtualTrade };
+  Simulation: undefined;
 };
 
 // Stats for Home Screen

@@ -29,7 +29,9 @@ export const useLivePrice = ({ symbol, enabled = true, onPriceUpdate }: UseLiveP
     const handlePriceUpdate = (receivedSymbol: string, newPrice: number) => {
       if (receivedSymbol === symbol) {
         setPrice(newPrice);
-        callbackRef.current?.(newPrice);
+        if (callbackRef.current) {
+          callbackRef.current(newPrice);
+        }
       }
     };
 

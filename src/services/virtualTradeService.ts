@@ -123,7 +123,16 @@ class VirtualTradeService {
         }
       }
 
-      await this.addPriceToHistory(id, currentPrice);
+      // Only add to price history every 4 hours to avoid huge lists
+      const priceHistory = trade.priceHistory || [];
+      const lastHistoryEntry = priceHistory[priceHistory.length - 1];
+      const now = new Date();
+      const shouldAddToHistory = !lastHistoryEntry ||
+        (now.getTime() - new Date(lastHistoryEntry.timestamp).getTime() >= 4 * 60 * 60 * 1000); // 4 hours
+
+      if (shouldAddToHistory) {
+        await this.addPriceToHistory(id, currentPrice);
+      }
 
       return await this.updateTrade(id, {
         currentPrice,

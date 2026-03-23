@@ -12,9 +12,11 @@
 
     <!-- Production domains that require HTTPS -->
     <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">cryptoadviser-api.fly.dev</domain>
         <domain includeSubdomains="true">crypprovid.onrender.com</domain>
         <domain includeSubdomains="true">data-api.binance.vision</domain>
         <domain includeSubdomains="true">binance.com</domain>
+        <domain includeSubdomains="true">stream.binance.com</domain>
     </domain-config>
 
     <!-- Allow localhost for development -->

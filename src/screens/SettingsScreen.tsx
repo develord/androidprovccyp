@@ -10,8 +10,13 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } from '../config/theme';
+import { RootStackParamList } from '../types';
 import DatabaseService from '../services/databaseService';
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'HomeTabs'>;
 
 const LANGUAGES = [
   { code: 'en', name: 'English', nativeName: 'English' },
@@ -23,6 +28,7 @@ const LANGUAGES = [
 
 const SettingsScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const navigation = useNavigation<NavigationProp>();
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
 
   useEffect(() => {
@@ -84,6 +90,27 @@ const SettingsScreen: React.FC = () => {
               </TouchableOpacity>
             ))}
           </View>
+        </View>
+
+        {/* Advanced Tools */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Advanced Tools</Text>
+          <Text style={styles.sectionSubtitle}>Backtest and simulation tools</Text>
+
+          <TouchableOpacity
+            style={styles.toolButton}
+            onPress={() => navigation.navigate('Simulation')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.toolIcon}>
+              <Text style={styles.toolIconText}>📊</Text>
+            </View>
+            <View style={styles.toolInfo}>
+              <Text style={styles.toolName}>Simulation IA</Text>
+              <Text style={styles.toolDescription}>Run backtests on historical data</Text>
+            </View>
+            <Text style={styles.toolArrow}>›</Text>
+          </TouchableOpacity>
         </View>
 
         {/* About App */}
@@ -272,6 +299,45 @@ const styles = StyleSheet.create({
     fontSize: FONT_SIZES.xs,
     color: COLORS.textDark,
     textAlign: 'center',
+  },
+  toolButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.card,
+    borderRadius: BORDER_RADIUS.lg,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  toolIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: BORDER_RADIUS.md,
+    backgroundColor: `${COLORS.primary}15`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
+  },
+  toolIconText: {
+    fontSize: 24,
+  },
+  toolInfo: {
+    flex: 1,
+  },
+  toolName: {
+    fontSize: FONT_SIZES.lg,
+    fontWeight: FONT_WEIGHTS.semibold,
+    color: COLORS.text,
+    marginBottom: SPACING.xs,
+  },
+  toolDescription: {
+    fontSize: FONT_SIZES.sm,
+    color: COLORS.textSecondary,
+  },
+  toolArrow: {
+    fontSize: FONT_SIZES.xxxl,
+    color: COLORS.textSecondary,
+    fontWeight: FONT_WEIGHTS.light,
   },
 });
 

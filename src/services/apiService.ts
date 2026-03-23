@@ -135,6 +135,28 @@ class APIService {
   }
 
   /**
+   * Run backtest simulation
+   */
+  async runBacktest(params: {
+    crypto: string;
+    start_date: string;
+    end_date: string;
+    tp_pct?: number;
+    sl_pct?: number;
+    prob_threshold?: number;
+  }): Promise<any> {
+    try {
+      console.log('Running backtest with params:', params);
+      const response = await this.client.post('/api/backtest', params);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error running backtest:', error);
+      console.error('Error response:', error.response?.data);
+      throw new Error(error.response?.data?.detail || 'Failed to run backtest');
+    }
+  }
+
+  /**
    * Clear all cache
    */
   clearCache(): void {
