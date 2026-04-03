@@ -1,276 +1,343 @@
-// HomeScreen — Premium Crypto Command Center
+// HomeScreen — All Binance Cryptos with Technical Data
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, FlatList, RefreshControl,
-  ActivityIndicator, StatusBar, TouchableOpacity, Dimensions,
+  ActivityIndicator, StatusBar, TouchableOpacity, Image, TextInput,
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { useFocusEffect } from '@react-navigation/native';
-import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS } from '../config/theme';
-import { RootStackParamList, CryptoPrediction, Stats } from '../types';
+import { COLORS, SPACING, SHADOWS } from '../config/theme';
+import { RootStackParamList } from '../types';
+import axios from 'axios';
 import APIService from '../services/apiService';
-import CryptoCard from '../components/CryptoCard';
-import DatabaseService from '../services/databaseService';
 
-const { width: SW } = Dimensions.get('window');
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
-const FILTERS = ['ALL', 'BUY', 'SELL', 'HOLD'] as const;
-type FilterType = typeof FILTERS[number];
+const BINANCE_API = 'https://data-api.binance.vision';
+
+// Our AI-supported coins
+const AI_COINS = ['BTC', 'ETH', 'SOL', 'DOGE', 'AVAX'];
+
+const COIN_IMAGES: Record<string, string> = {
+  BTC: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
+  ETH: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+  SOL: 'https://assets.coingecko.com/coins/images/4128/small/solana.png',
+  DOGE: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
+  AVAX: 'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png',
+  BNB: 'https://assets.coingecko.com/coins/images/825/small/bnb-icon2_2x.png',
+  XRP: 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
+  ADA: 'https://assets.coingecko.com/coins/images/975/small/cardano.png',
+  DOT: 'https://assets.coingecko.com/coins/images/12171/small/polkadot.png',
+  MATIC: 'https://assets.coingecko.com/coins/images/4713/small/polygon.png',
+  LINK: 'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png',
+  UNI: 'https://assets.coingecko.com/coins/images/12504/small/uni.jpg',
+  ATOM: 'https://assets.coingecko.com/coins/images/1481/small/cosmos_hub.png',
+  LTC: 'https://assets.coingecko.com/coins/images/2/small/litecoin.png',
+  FIL: 'https://assets.coingecko.com/coins/images/12817/small/filecoin.png',
+  NEAR: 'https://assets.coingecko.com/coins/images/10365/small/near.jpg',
+  APT: 'https://assets.coingecko.com/coins/images/26455/small/aptos_round.png',
+  ARB: 'https://assets.coingecko.com/coins/images/16547/small/photo_2023-03-29_21.47.00.jpeg',
+  OP: 'https://assets.coingecko.com/coins/images/25244/small/Optimism.png',
+  SUI: 'https://assets.coingecko.com/coins/images/26375/small/sui_asset.jpeg',
+};
+
+// Top traded pairs on Binance
+const TOP_PAIRS = [
+  'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT',
+  'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT', 'LINKUSDT',
+  'MATICUSDT', 'UNIUSDT', 'ATOMUSDT', 'LTCUSDT', 'FILUSDT',
+  'NEARUSDT', 'APTUSDT', 'ARBUSDT', 'OPUSDT', 'SUIUSDT',
+];
+
+interface CryptoTicker {
+  symbol: string;
+  coin: string;
+  price: number;
+  change24h: number;
+  changePct: number;
+  volume: number;
+  high24h: number;
+  low24h: number;
+  hasAI: boolean;
+}
 
 const HomeScreen: React.FC<Props> = ({ navigation }) => {
-  const [predictions, setPredictions] = useState<CryptoPrediction[]>([]);
-  const [filtered, setFiltered] = useState<CryptoPrediction[]>([]);
-  const [stats, setStats] = useState<Stats>({ total: 0, buy: 0, sell: 0, hold: 0 });
+  const [tickers, setTickers] = useState<CryptoTicker[]>([]);
+  const [filtered, setFiltered] = useState<CryptoTicker[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [favorites, setFavorites] = useState<string[]>([]);
-  const [activeFilter, setActiveFilter] = useState<FilterType>('ALL');
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<'rank' | 'gainers' | 'losers' | 'volume' | 'ai'>('rank');
 
-  useEffect(() => { loadData(); }, []);
-
-  useFocusEffect(useCallback(() => {
-    const refresh = async () => {
-      const f = await DatabaseService.getFavorites();
-      setFavorites(f);
-      setPredictions(prev => sortByFavorites(prev, f));
-    };
-    refresh();
-  }, []));
-
-  useEffect(() => {
-    if (activeFilter === 'ALL') {
-      setFiltered(predictions);
-    } else {
-      setFiltered(predictions.filter(p => p.signal === activeFilter));
-    }
-  }, [activeFilter, predictions]);
-
-  const sortByFavorites = (preds: CryptoPrediction[], favs: string[]) =>
-    [...preds].sort((a: any, b: any) => {
-      const af = favs.includes(a.crypto);
-      const bf = favs.includes(b.crypto);
-      if (af && !bf) return -1;
-      if (!af && bf) return 1;
-      return 0;
-    });
-
-  const loadData = async () => {
-    await loadFavorites();
-    await loadPredictions();
-  };
-
-  const loadFavorites = async () => setFavorites(await DatabaseService.getFavorites());
-
-  const loadPredictions = async () => {
+  const fetchTickers = async () => {
     try {
-      setError(null);
-      let arr = await APIService.getAllPredictions();
-      const favs = await DatabaseService.getFavorites();
-      arr = sortByFavorites(arr, favs);
-      setPredictions(arr);
-      setStats({
-        total: arr.length,
-        buy: arr.filter(p => p.signal === 'BUY').length,
-        sell: arr.filter(p => p.signal === 'SELL').length,
-        hold: arr.filter(p => p.signal === 'HOLD').length,
-      });
-    } catch (err) {
-      setError('Failed to load. Check API connection.');
+      const res = await axios.get(`${BINANCE_API}/api/v3/ticker/24hr`);
+      const data: CryptoTicker[] = TOP_PAIRS
+        .map(pair => {
+          const t = res.data.find((x: any) => x.symbol === pair);
+          if (!t) return null;
+          const coin = pair.replace('USDT', '');
+          return {
+            symbol: pair,
+            coin,
+            price: parseFloat(t.lastPrice),
+            change24h: parseFloat(t.priceChange),
+            changePct: parseFloat(t.priceChangePercent),
+            volume: parseFloat(t.quoteVolume),
+            high24h: parseFloat(t.highPrice),
+            low24h: parseFloat(t.lowPrice),
+            hasAI: AI_COINS.includes(coin),
+          };
+        })
+        .filter(Boolean) as CryptoTicker[];
+
+      setTickers(data);
+    } catch (e) {
+      console.error('Ticker fetch error:', e);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   };
 
-  const handleToggleFavorite = async (id: string) => {
-    await DatabaseService.toggleFavorite(id);
-    const f = await DatabaseService.getFavorites();
-    setFavorites(f);
-    setPredictions(prev => sortByFavorites(prev, f));
+  useEffect(() => { fetchTickers(); }, []);
+
+  useEffect(() => {
+    let f = [...tickers];
+    if (search) {
+      f = f.filter(t => t.coin.toLowerCase().includes(search.toLowerCase()));
+    }
+    if (sortBy === 'gainers') f.sort((a, b) => b.changePct - a.changePct);
+    else if (sortBy === 'losers') f.sort((a, b) => a.changePct - b.changePct);
+    else if (sortBy === 'volume') f.sort((a, b) => b.volume - a.volume);
+    else if (sortBy === 'ai') f = f.filter(t => t.hasAI);
+    setFiltered(f);
+  }, [search, sortBy, tickers]);
+
+  const onRefresh = useCallback(() => { setRefreshing(true); fetchTickers(); }, []);
+
+  const formatPrice = (p: number) => {
+    if (p >= 1000) return `$${p.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+    if (p >= 1) return `$${p.toFixed(2)}`;
+    return `$${p.toFixed(4)}`;
   };
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    APIService.clearCache();
-    loadData();
-  }, []);
-
-  const getFilterColor = (f: FilterType) => {
-    if (f === 'BUY') return COLORS.success;
-    if (f === 'SELL') return COLORS.danger;
-    if (f === 'HOLD') return COLORS.warning;
-    return COLORS.primary;
+  const formatVolume = (v: number) => {
+    if (v >= 1e9) return `$${(v / 1e9).toFixed(1)}B`;
+    if (v >= 1e6) return `$${(v / 1e6).toFixed(0)}M`;
+    return `$${(v / 1e3).toFixed(0)}K`;
   };
 
-  const getFilterCount = (f: FilterType) => {
-    if (f === 'ALL') return stats.total;
-    if (f === 'BUY') return stats.buy;
-    if (f === 'SELL') return stats.sell;
-    return stats.hold;
+  const handleAIPress = async (coin: string) => {
+    const cryptoMap: Record<string, string> = {
+      BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', DOGE: 'dogecoin', AVAX: 'avalanche',
+    };
+    const cryptoId = cryptoMap[coin];
+    if (!cryptoId) return;
+
+    try {
+      const prediction = await APIService.getPrediction(cryptoId);
+      navigation.navigate('Detail', { crypto: prediction });
+    } catch (e) {
+      // Navigate with minimal data if API fails
+      navigation.navigate('Detail', {
+        crypto: {
+          crypto: cryptoId, symbol: `${coin}USDT`, name: coin,
+          signal: 'HOLD', confidence: 0, current_price: null,
+          risk_management: null, timestamp: new Date().toISOString(),
+        } as any,
+      });
+    }
+  };
+
+  const renderTicker = ({ item, index }: { item: CryptoTicker; index: number }) => {
+    const isPositive = item.changePct >= 0;
+    const changeColor = isPositive ? COLORS.success : COLORS.danger;
+    const img = COIN_IMAGES[item.coin];
+
+    return (
+      <View style={cs.card}>
+        {/* Rank + Coin info */}
+        <View style={cs.leftSection}>
+          <Text style={cs.rank}>{index + 1}</Text>
+          <View style={cs.coinInfo}>
+            {img ? (
+              <Image source={{ uri: img }} style={cs.coinImg} />
+            ) : (
+              <View style={cs.coinPlaceholder}>
+                <Text style={cs.coinLetter}>{item.coin[0]}</Text>
+              </View>
+            )}
+            <View>
+              <Text style={cs.coinName}>{item.coin}</Text>
+              <Text style={cs.coinPair}>/USDT</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Price + Change */}
+        <View style={cs.midSection}>
+          <Text style={cs.price}>{formatPrice(item.price)}</Text>
+          <View style={[cs.changeBadge, { backgroundColor: `${changeColor}12` }]}>
+            <Text style={[cs.changeText, { color: changeColor }]}>
+              {isPositive ? '+' : ''}{item.changePct.toFixed(2)}%
+            </Text>
+          </View>
+        </View>
+
+        {/* Volume + AI Button */}
+        <View style={cs.rightSection}>
+          <Text style={cs.volume}>{formatVolume(item.volume)}</Text>
+          {item.hasAI ? (
+            <TouchableOpacity
+              style={cs.aiBtn}
+              onPress={() => handleAIPress(item.coin)}
+              activeOpacity={0.7}
+            >
+              <Text style={cs.aiBtnText}>🧠 IA</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={cs.aiBtnDisabled}>
+              <Text style={cs.aiBtnTextDisabled}>🧠 IA</Text>
+            </View>
+          )}
+        </View>
+      </View>
+    );
   };
 
   const renderHeader = () => (
-    <View style={styles.header}>
-      {/* Title */}
-      <View style={styles.titleRow}>
+    <View style={st.header}>
+      <View style={st.titleRow}>
         <View>
-          <Text style={styles.title}>CryptoAdviser</Text>
-          <Text style={styles.subtitle}>CNN AI Trading Signals</Text>
+          <Text style={st.title}>CryptoAdviser</Text>
+          <Text style={st.subtitle}>Market Overview</Text>
         </View>
-        <View style={styles.liveIndicator}>
-          <View style={styles.liveDot} />
-          <Text style={styles.liveText}>LIVE</Text>
-        </View>
-      </View>
-
-      {/* Market Overview Stats */}
-      <View style={styles.statsRow}>
-        <View style={[styles.statBox, { borderColor: COLORS.primary + '30' }]}>
-          <Text style={styles.statValue}>{stats.total}</Text>
-          <Text style={styles.statLabel}>Coins</Text>
-        </View>
-        <View style={[styles.statBox, { borderColor: COLORS.success + '30' }]}>
-          <Text style={[styles.statValue, { color: COLORS.success }]}>{stats.buy}</Text>
-          <Text style={styles.statLabel}>Buy</Text>
-        </View>
-        <View style={[styles.statBox, { borderColor: COLORS.danger + '30' }]}>
-          <Text style={[styles.statValue, { color: COLORS.danger }]}>{stats.sell}</Text>
-          <Text style={styles.statLabel}>Sell</Text>
-        </View>
-        <View style={[styles.statBox, { borderColor: COLORS.warning + '30' }]}>
-          <Text style={[styles.statValue, { color: COLORS.warning }]}>{stats.hold}</Text>
-          <Text style={styles.statLabel}>Hold</Text>
+        <View style={st.aiBadge}>
+          <Text style={st.aiCount}>{AI_COINS.length}</Text>
+          <Text style={st.aiLabel}>IA MODELS</Text>
         </View>
       </View>
 
-      {/* Filter chips */}
-      <View style={styles.filterRow}>
-        {FILTERS.map(f => {
-          const active = activeFilter === f;
-          const color = getFilterColor(f);
+      {/* Search */}
+      <View style={st.searchBar}>
+        <Text style={st.searchIcon}>🔍</Text>
+        <TextInput
+          style={st.searchInput}
+          placeholder="Search coin..."
+          placeholderTextColor={COLORS.textDark}
+          value={search}
+          onChangeText={setSearch}
+        />
+      </View>
+
+      {/* Sort/Filter chips */}
+      <View style={st.sortRow}>
+        {([
+          ['rank', '📋 All'],
+          ['gainers', '🚀 Gainers'],
+          ['losers', '📉 Losers'],
+          ['volume', '💎 Volume'],
+          ['ai', '🧠 AI Only'],
+        ] as const).map(([key, label]) => {
+          const active = sortBy === key;
+          const color = key === 'gainers' ? COLORS.success : key === 'losers' ? COLORS.danger : key === 'ai' ? COLORS.primary : COLORS.primary;
           return (
-            <TouchableOpacity
-              key={f}
-              style={[
-                styles.filterChip,
-                active && { backgroundColor: `${color}20`, borderColor: color },
-              ]}
-              onPress={() => setActiveFilter(f)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.filterText, active && { color }]}>
-                {f} ({getFilterCount(f)})
-              </Text>
+            <TouchableOpacity key={key} style={[st.sortChip, active && { borderColor: color, backgroundColor: `${color}10` }]}
+              onPress={() => setSortBy(key as any)}>
+              <Text style={[st.sortText, active && { color }]}>{label}</Text>
             </TouchableOpacity>
           );
         })}
+      </View>
+
+      {/* Column headers */}
+      <View style={st.colHeaders}>
+        <Text style={[st.colText, { flex: 1.2 }]}>#  Coin</Text>
+        <Text style={[st.colText, { flex: 1, textAlign: 'center' }]}>Price / 24h</Text>
+        <Text style={[st.colText, { flex: 0.8, textAlign: 'right' }]}>Vol / IA</Text>
       </View>
     </View>
   );
 
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={st.center}>
         <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-        <View style={styles.loadingPulse}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
-        <Text style={styles.loadingText}>Fetching CNN predictions...</Text>
-        <Text style={styles.loadingHint}>Analyzing 5 coins across 3 timeframes</Text>
-      </View>
-    );
-  }
-
-  if (error) {
-    return (
-      <View style={styles.center}>
-        <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-        <Text style={styles.errorIcon}>⚡</Text>
-        <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryBtn} onPress={loadData}>
-          <Text style={styles.retryText}>Retry</Text>
-        </TouchableOpacity>
+        <ActivityIndicator size="large" color={COLORS.primary} />
+        <Text style={st.loadText}>Loading market data...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <View style={st.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
       <FlatList
         data={filtered}
-        renderItem={({ item }) => (
-          <CryptoCard
-            crypto={item}
-            onPress={() => navigation.navigate('Detail', { crypto: item })}
-            isFavorite={favorites.includes(item.crypto)}
-            onToggleFavorite={() => handleToggleFavorite(item.crypto)}
-          />
-        )}
-        keyExtractor={item => item.crypto}
+        renderItem={renderTicker}
+        keyExtractor={item => item.symbol}
         ListHeaderComponent={renderHeader}
-        ListEmptyComponent={
-          <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>No {activeFilter} signals right now</Text>
-          </View>
-        }
-        contentContainerStyle={styles.list}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} colors={[COLORS.primary]} />
-        }
+        contentContainerStyle={st.list}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
         showsVerticalScrollIndicator={false}
       />
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+// Screen styles
+const st = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
-  center: { flex: 1, backgroundColor: COLORS.background, justifyContent: 'center', alignItems: 'center', padding: 32 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.background },
   list: { paddingHorizontal: 16, paddingBottom: 100 },
+  loadText: { color: COLORS.textSecondary, marginTop: 12, fontSize: 13 },
 
-  // Header
-  header: { paddingTop: 52, marginBottom: 8 },
-  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 },
-  title: { fontSize: 30, fontWeight: '800', color: COLORS.text, letterSpacing: -0.5 },
-  subtitle: { fontSize: 13, color: COLORS.textSecondary, fontWeight: '500', marginTop: 3, letterSpacing: 0.5 },
-  liveIndicator: { flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,255,136,0.1)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(0,255,136,0.3)' },
-  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.success, marginRight: 5 },
-  liveText: { fontSize: 11, fontWeight: '800', color: COLORS.success, letterSpacing: 1.2 },
+  header: { paddingTop: 50, marginBottom: 8 },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 },
+  title: { fontSize: 28, fontWeight: '800', color: COLORS.text, letterSpacing: -0.3 },
+  subtitle: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '500', marginTop: 3, letterSpacing: 0.5 },
+  aiBadge: { alignItems: 'center', backgroundColor: 'rgba(0,212,255,0.1)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 14, borderWidth: 1, borderColor: 'rgba(0,212,255,0.3)' },
+  aiCount: { fontSize: 18, fontWeight: '900', color: COLORS.primary },
+  aiLabel: { fontSize: 7, fontWeight: '800', color: COLORS.primary, letterSpacing: 1.5 },
 
-  // Stats
-  statsRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  statBox: {
-    flex: 1, backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: 14, paddingVertical: 12,
-    alignItems: 'center', borderWidth: 1,
-  },
-  statValue: { fontSize: 22, fontWeight: '800', color: COLORS.primary, marginBottom: 2 },
-  statLabel: { fontSize: 10, color: COLORS.textSecondary, fontWeight: '600', letterSpacing: 0.8, textTransform: 'uppercase' },
+  searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: COLORS.border, marginBottom: 12 },
+  searchIcon: { fontSize: 16, marginRight: 8 },
+  searchInput: { flex: 1, fontSize: 14, color: COLORS.text, fontWeight: '500', padding: 0 },
 
-  // Filters
-  filterRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  filterChip: {
-    flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)',
-  },
-  filterText: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary, letterSpacing: 0.3 },
+  sortRow: { flexDirection: 'row', gap: 6, marginBottom: 12, flexWrap: 'wrap' },
+  sortChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+  sortChipActive: { borderColor: COLORS.primary, backgroundColor: `${COLORS.primary}10` },
+  sortText: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
+  sortTextActive: { color: COLORS.primary },
 
-  // Loading
-  loadingPulse: { marginBottom: 16 },
-  loadingText: { fontSize: 16, color: COLORS.text, fontWeight: '600', marginBottom: 4 },
-  loadingHint: { fontSize: 12, color: COLORS.textSecondary },
+  colHeaders: { flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 4, marginBottom: 4 },
+  colText: { fontSize: 10, color: COLORS.textDark, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' },
+});
 
-  // Error
-  errorIcon: { fontSize: 48, marginBottom: 12 },
-  errorText: { fontSize: 15, color: COLORS.danger, textAlign: 'center', marginBottom: 16 },
-  retryBtn: { backgroundColor: `${COLORS.primary}20`, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: COLORS.primary },
-  retryText: { color: COLORS.primary, fontWeight: '700', fontSize: 14 },
+// Card styles
+const cs = StyleSheet.create({
+  card: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 14, padding: 12, marginBottom: 8, borderWidth: 1, borderColor: COLORS.border },
 
-  // Empty
-  emptyBox: { alignItems: 'center', paddingVertical: 40 },
-  emptyText: { fontSize: 14, color: COLORS.textSecondary },
+  leftSection: { flexDirection: 'row', alignItems: 'center', flex: 1.2, gap: 8 },
+  rank: { fontSize: 11, color: COLORS.textDark, fontWeight: '700', width: 18, textAlign: 'center' },
+  coinInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  coinImg: { width: 30, height: 30, borderRadius: 15 },
+  coinPlaceholder: { width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.cardSecondary, justifyContent: 'center', alignItems: 'center' },
+  coinLetter: { fontSize: 14, fontWeight: '800', color: COLORS.textSecondary },
+  coinName: { fontSize: 14, fontWeight: '800', color: COLORS.text, letterSpacing: 0.3 },
+  coinPair: { fontSize: 9, color: COLORS.textDark, fontWeight: '600' },
+
+  midSection: { flex: 1, alignItems: 'center' },
+  price: { fontSize: 14, fontWeight: '800', color: COLORS.text, marginBottom: 3 },
+  changeBadge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: 6 },
+  changeText: { fontSize: 11, fontWeight: '800' },
+
+  rightSection: { flex: 0.8, alignItems: 'flex-end', gap: 4 },
+  volume: { fontSize: 10, color: COLORS.textSecondary, fontWeight: '600' },
+  aiBtn: { backgroundColor: `${COLORS.primary}15`, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: `${COLORS.primary}40` },
+  aiBtnText: { fontSize: 10, fontWeight: '800', color: COLORS.primary },
+  aiBtnDisabled: { backgroundColor: 'rgba(255,255,255,0.03)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
+  aiBtnTextDisabled: { fontSize: 10, fontWeight: '700', color: COLORS.textDark },
 });
 
 export default HomeScreen;
