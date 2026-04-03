@@ -72,14 +72,11 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const loadPredictions = async () => {
     try {
       setError(null);
-      const response = await APIService.getAllPredictions();
-
-      // Convert predictions object to array
-      let predictionsArray = Object.values(response.predictions);
+      let predictionsArray = await APIService.getAllPredictions();
 
       // Sort predictions: favorites first, then others
       const currentFavorites = await DatabaseService.getFavorites();
-      predictionsArray = predictionsArray.sort((a, b) => {
+      predictionsArray = [...predictionsArray].sort((a: any, b: any) => {
         const aIsFavorite = currentFavorites.includes(a.crypto);
         const bIsFavorite = currentFavorites.includes(b.crypto);
 

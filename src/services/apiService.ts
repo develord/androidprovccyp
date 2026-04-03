@@ -1,13 +1,39 @@
-// API Service - Consomme l'API FastAPI
+// API Service - CNN Prediction API
 import axios, { AxiosInstance } from 'axios';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_CONFIG } from '../config/api';
-import {
-  CryptoPrediction,
-  CryptoListResponse,
-  AllPredictionsResponse,
-  HealthCheckResponse,
-} from '../types';
+
+// Types for CNN API responses
+export interface CryptoPrediction {
+  crypto: string;
+  symbol: string;
+  name: string;
+  signal: 'BUY' | 'SELL' | 'HOLD';
+  direction: 'LONG' | 'SHORT' | null;
+  confidence: number;
+  long_confidence: number | null;
+  short_confidence: number | null;
+  long_filter: string | null;
+  short_filter: string | null;
+  current_price: number;
+  risk_management: {
+    target_price: number;
+    stop_loss: number;
+    take_profit_pct: number;
+    stop_loss_pct: number;
+    risk_reward_ratio: number;
+  } | null;
+  model: string;
+  timestamp: string;
+  data_source: string;
+}
+
+export interface CryptoInfo {
+  id: string;
+  symbol: string;
+  name: string;
+  models: string[];
+  status: string;
+}
 
 class APIService {
   private client: AxiosInstance;
@@ -18,90 +44,36 @@ class APIService {
     this.client = axios.create({
       baseURL: API_CONFIG.BASE_URL,
       timeout: API_CONFIG.TIMEOUT,
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
-
     this.cache = new Map();
   }
 
   /**
-   * Get all available cryptos
+   * Get all supported cryptos (BTC, ETH, SOL, DOGE, AVAX)
    */
-  async getCryptosList(): Promise<CryptoListResponse> {
+  async getCryptosList(): Promise<{ cryptos: Record<string, CryptoInfo>; count: number }> {
     try {
       const response = await this.client.get(API_CONFIG.ENDPOINTS.CRYPTOS);
       return response.data;
     } catch (error) {
-      console.error('Error fetching cryptos list:', error);
+      console.error('Error fetching cryptos:', error);
       throw new Error('Failed to fetch cryptos list');
     }
   }
 
   /**
-   * Get all predictions
-   */
-  async getAllPredictions(): Promise<AllPredictionsResponse> {
-    try {
-      // Check cache first
-      const cached = this.getFromCache('all_predictions');
-      if (cached) {
-        console.log('Returning cached predictions');
-        return cached;
-      }
-
-      const url = API_CONFIG.BASE_URL + API_CONFIG.ENDPOINTS.PREDICTIONS_ALL;
-      console.log('Fetching predictions from:', url);
-
-      // Try with native fetch first
-      try {
-        const fetchResponse = await fetch(url, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        console.log('Fetch response status:', fetchResponse.status);
-        const data = await fetchResponse.json();
-        console.log('Fetch response received successfully');
-
-        // Cache the result
-        this.setCache('all_predictions', data);
-        return data;
-      } catch (fetchError: any) {
-        console.error('Fetch failed, error:', fetchError.message);
-        throw fetchError;
-      }
-    } catch (error: any) {
-      console.error('Error fetching all predictions:', error);
-      console.error('Error message:', error.message);
-      console.error('Error code:', error.code);
-      console.error('Error stack:', error.stack);
-      throw new Error('Failed to fetch predictions');
-    }
-  }
-
-  /**
-   * Get prediction for a specific crypto
+   * Get CNN prediction for a specific crypto (LONG + SHORT)
    */
   async getPrediction(crypto: string): Promise<CryptoPrediction> {
     try {
-      // Check cache first
       const cacheKey = `prediction_${crypto}`;
       const cached = this.getFromCache(cacheKey);
-      if (cached) {
-        console.log(`Returning cached prediction for ${crypto}`);
-        return cached;
-      }
+      if (cached) return cached;
 
       const response = await this.client.get(API_CONFIG.ENDPOINTS.PREDICTION(crypto));
-      const data = response.data;
-
-      // Cache the result
-      this.setCache(cacheKey, data);
-
-      return data;
+      this.setCache(cacheKey, response.data);
+      return response.data;
     } catch (error) {
       console.error(`Error fetching prediction for ${crypto}:`, error);
       throw new Error(`Failed to fetch prediction for ${crypto}`);
@@ -109,12 +81,23 @@ class APIService {
   }
 
   /**
-   * Get current price for a crypto
+   * Get predictions for ALL cryptos
+   */
+  async getAllPredictions(): Promise<CryptoPrediction[]> {
+    const cryptos = ['bitcoin', 'ethereum', 'solana', 'dogecoin', 'avalanche'];
+    const predictions = await Promise.all(
+      cryptos.map(c => this.getPrediction(c).catch(() => null))
+    );
+    return predictions.filter(p => p !== null) as CryptoPrediction[];
+  }
+
+  /**
+   * Get current price
    */
   async getCurrentPrice(crypto: string): Promise<number> {
     try {
-      const response = await this.client.get(API_CONFIG.ENDPOINTS.PRICE(crypto));
-      return response.data.price;
+      const prediction = await this.getPrediction(crypto);
+      return prediction.current_price;
     } catch (error) {
       console.error(`Error fetching price for ${crypto}:`, error);
       throw new Error(`Failed to fetch price for ${crypto}`);
@@ -124,7 +107,7 @@ class APIService {
   /**
    * Health check
    */
-  async healthCheck(): Promise<HealthCheckResponse> {
+  async healthCheck(): Promise<any> {
     try {
       const response = await this.client.get(API_CONFIG.ENDPOINTS.HEALTH);
       return response.data;
@@ -134,60 +117,22 @@ class APIService {
     }
   }
 
-  /**
-   * Run backtest simulation
-   */
-  async runBacktest(params: {
-    crypto: string;
-    start_date: string;
-    end_date: string;
-    tp_pct?: number;
-    sl_pct?: number;
-    prob_threshold?: number;
-  }): Promise<any> {
-    try {
-      console.log('Running backtest with params:', params);
-      const response = await this.client.post('/api/backtest', params);
-      return response.data;
-    } catch (error: any) {
-      console.error('Error running backtest:', error);
-      console.error('Error response:', error.response?.data);
-      throw new Error(error.response?.data?.detail || 'Failed to run backtest');
-    }
-  }
-
-  /**
-   * Clear all cache
-   */
   clearCache(): void {
     this.cache.clear();
-    console.log('Cache cleared');
   }
 
-  /**
-   * Get data from cache if not expired
-   */
   private getFromCache(key: string): any | null {
     const cached = this.cache.get(key);
     if (!cached) return null;
-
-    const now = Date.now();
-    if (now - cached.timestamp > this.CACHE_DURATION) {
+    if (Date.now() - cached.timestamp > this.CACHE_DURATION) {
       this.cache.delete(key);
       return null;
     }
-
     return cached.data;
   }
 
-  /**
-   * Set data in cache
-   */
   private setCache(key: string, data: any): void {
-    this.cache.set(key, {
-      data,
-      timestamp: Date.now(),
-    });
+    this.cache.set(key, { data, timestamp: Date.now() });
   }
 }
 
