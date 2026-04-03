@@ -10,6 +10,7 @@ import { RootStackParamList, TabParamList } from '../types';
 import HomeScreen from '../screens/HomeScreen';
 import DetailScreen from '../screens/DetailScreen';
 import SettingsScreen from '../screens/SettingsScreen';
+import SignalsScreen from '../screens/SignalsScreen';
 import LiveTradingScreen from '../screens/LiveTradingScreen';
 import TradeDetailScreen from '../screens/TradeDetailScreen';
 import SimulationScreen from '../screens/SimulationScreen';
@@ -53,10 +54,20 @@ const BottomTabs: React.FC = () => {
         }}
       />
       <Tab.Screen
+        name="SignalsTab"
+        component={SignalsScreen}
+        options={{
+          tabBarLabel: 'Signals',
+          tabBarIcon: ({ color }) => (
+            <Text style={{ fontSize: 26, color, fontWeight: 'bold' }}>📡</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
         name="PortfolioTab"
         component={LiveTradingScreen}
         options={{
-          tabBarLabel: 'Live Trades',
+          tabBarLabel: 'Trades',
           tabBarIcon: ({ color }) => (
             <Text style={{ fontSize: 26, color, fontWeight: 'bold' }}>📊</Text>
           ),
