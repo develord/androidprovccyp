@@ -87,6 +87,18 @@ const LiveTradingScreen: React.FC = () => {
         openOrders = ordRes.data;
       } catch (e) {}
 
+      // Fetch algo orders (SL STOP_MARKET)
+      const algoParams = signRequest({ timestamp: Date.now(), recvWindow: 10000 });
+      let algoOrders: any[] = [];
+      try {
+        const algoRes = await axios.get(`${DEMO_API}/fapi/v1/openAlgoOrders`, {
+          params: algoParams,
+          headers: { 'X-MBX-APIKEY': API_KEY },
+        });
+        const data = algoRes.data;
+        algoOrders = Array.isArray(data) ? data : (data.orders || []);
+      } catch (e) {}
+
       const openPositions: Position[] = [];
       let pnlTotal = 0;
 
@@ -110,17 +122,12 @@ const LiveTradingScreen: React.FC = () => {
         );
         const tpPrice = tpOrder ? parseFloat(tpOrder.price) : null;
 
-        // Estimate SL (TP * 2 distance from entry, opposite direction)
-        let slPrice: number | null = null;
-        if (tpPrice && entry > 0) {
-          if (side === 'LONG') {
-            const tpDist = tpPrice - entry;
-            slPrice = entry - tpDist * 0.5;
-          } else {
-            const tpDist = entry - tpPrice;
-            slPrice = entry + tpDist * 0.5;
-          }
-        }
+        // Find SL from algo orders (STOP_MARKET)
+        const slSide = side === 'LONG' ? 'SELL' : 'BUY';
+        const slOrder = algoOrders.find(
+          (o: any) => o.symbol === pos.symbol && o.side === slSide && o.orderType === 'STOP_MARKET' && o.algoStatus === 'NEW'
+        );
+        let slPrice: number | null = slOrder ? parseFloat(slOrder.triggerPrice) : null;
 
         // Calculate progress towards TP (0-100%)
         let progress = 0;
