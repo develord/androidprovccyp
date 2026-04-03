@@ -1,6 +1,6 @@
 // CryptoCard — Premium glassmorphism card with signal prominence
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions, Image } from 'react-native';
 import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { CryptoPrediction } from '../types';
 
@@ -13,8 +13,12 @@ interface CryptoCardProps {
   onToggleFavorite?: () => void;
 }
 
-const COIN_ICONS: Record<string, string> = {
-  bitcoin: '₿', ethereum: 'Ξ', solana: '◎', dogecoin: 'Ð', avalanche: '▲',
+const COIN_IMAGES: Record<string, string> = {
+  bitcoin: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
+  ethereum: 'https://assets.coingecko.com/coins/images/279/small/ethereum.png',
+  solana: 'https://assets.coingecko.com/coins/images/4128/small/solana.png',
+  dogecoin: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
+  avalanche: 'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png',
 };
 
 const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onPress, isFavorite = false, onToggleFavorite }) => {
@@ -25,7 +29,7 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onPress, isFavorite = f
 
   const signalColor = signal === 'BUY' ? COLORS.success : signal === 'SELL' ? COLORS.danger : COLORS.warning;
   const signalGlow = signal === 'BUY' ? 'rgba(0,255,136,0.15)' : signal === 'SELL' ? 'rgba(255,51,102,0.15)' : 'rgba(255,184,0,0.08)';
-  const coinIcon = COIN_ICONS[crypto.crypto] || '●';
+  const coinImage = COIN_IMAGES[crypto.crypto];
 
   const handleFavoritePress = (e: any) => {
     e.stopPropagation();
@@ -53,7 +57,11 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onPress, isFavorite = f
         <View style={styles.topRow}>
           <View style={styles.coinInfo}>
             <View style={[styles.iconCircle, { borderColor: `${signalColor}40` }]}>
-              <Text style={[styles.coinIcon, { color: signalColor }]}>{coinIcon}</Text>
+              {coinImage ? (
+                <Image source={{ uri: coinImage }} style={styles.coinImage} />
+              ) : (
+                <Text style={[styles.coinIcon, { color: signalColor }]}>●</Text>
+              )}
             </View>
             <View style={styles.nameBlock}>
               <View style={styles.nameRow}>
@@ -78,10 +86,12 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onPress, isFavorite = f
           {/* Signal badge */}
           <View style={[styles.signalBadge, { backgroundColor: `${signalColor}18`, borderColor: `${signalColor}50` }]}>
             <View style={[styles.signalDot, { backgroundColor: signalColor }]} />
-            <Text style={[styles.signalText, { color: signalColor }]}>{signal}</Text>
+            <Text style={[styles.signalText, { color: signalColor }]}>
+              {signal === 'BUY' ? 'LONG' : signal === 'SELL' ? 'SHORT' : 'HOLD'}
+            </Text>
             {direction && (
               <Text style={[styles.directionText, { color: signalColor }]}>
-                {direction === 'LONG' ? '↑' : '↓'} {direction}
+                {direction === 'LONG' ? '↑' : '↓'}
               </Text>
             )}
           </View>
@@ -145,6 +155,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+  },
+  coinImage: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
   },
   coinIcon: {
     fontSize: 20,
