@@ -1,344 +1,276 @@
-// SettingsScreen - Settings and language selection
+// SettingsScreen — System Status + Preferences
 import React, { useState, useEffect } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  StatusBar,
-  SafeAreaView,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity,
+  StatusBar, SafeAreaView, ActivityIndicator,
 } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { RootStackParamList } from '../types';
+import APIService from '../services/apiService';
 import DatabaseService from '../services/databaseService';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'HomeTabs'>;
 
 const LANGUAGES = [
-  { code: 'en', name: 'English', nativeName: 'English' },
-  { code: 'fr', name: 'French', nativeName: 'Français' },
-  { code: 'ar', name: 'Arabic', nativeName: 'العربية' },
-  { code: 'es', name: 'Spanish', nativeName: 'Español' },
-  { code: 'de', name: 'German', nativeName: 'Deutsch' },
+  { code: 'en', name: 'English', native: 'English', flag: '🇬🇧' },
+  { code: 'fr', name: 'French', native: 'Français', flag: '🇫🇷' },
+  { code: 'ar', name: 'Arabic', native: 'العربية', flag: '🇸🇦' },
+  { code: 'es', name: 'Spanish', native: 'Español', flag: '🇪🇸' },
+  { code: 'de', name: 'German', native: 'Deutsch', flag: '🇩🇪' },
 ];
 
 const SettingsScreen: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigation = useNavigation<NavigationProp>();
-  const [selectedLanguage, setSelectedLanguage] = useState(i18n.language);
+  const [selectedLang, setSelectedLang] = useState(i18n.language);
+  const [apiStatus, setApiStatus] = useState<'checking' | 'online' | 'offline'>('checking');
+  const [modelsLoaded, setModelsLoaded] = useState(0);
 
   useEffect(() => {
-    loadSavedLanguage();
+    loadLang();
+    checkApi();
   }, []);
 
-  const loadSavedLanguage = async () => {
-    const savedLanguage = await DatabaseService.getLanguage();
-    setSelectedLanguage(savedLanguage);
-    i18n.changeLanguage(savedLanguage);
+  const loadLang = async () => {
+    const saved = await DatabaseService.getLanguage();
+    setSelectedLang(saved);
+    i18n.changeLanguage(saved);
   };
 
-  const handleLanguageChange = async (languageCode: string) => {
-    setSelectedLanguage(languageCode);
-    await DatabaseService.setLanguage(languageCode);
-    i18n.changeLanguage(languageCode);
+  const changeLang = async (code: string) => {
+    setSelectedLang(code);
+    await DatabaseService.setLanguage(code);
+    i18n.changeLanguage(code);
   };
+
+  const checkApi = async () => {
+    try {
+      const health = await APIService.healthCheck();
+      setApiStatus('online');
+      setModelsLoaded(health.models_loaded || 0);
+    } catch {
+      setApiStatus('offline');
+    }
+  };
+
+  const StatusDot = ({ status }: { status: string }) => (
+    <View style={[s.statusDot, {
+      backgroundColor: status === 'online' ? COLORS.success : status === 'offline' ? COLORS.danger : COLORS.warning
+    }]} />
+  );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={s.container}>
       <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>{t('settings_title')}</Text>
+        <View style={s.header}>
+          <Text style={s.title}>Settings</Text>
+          <Text style={s.subtitle}>System & Preferences</Text>
         </View>
 
-        {/* Language Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('language')}</Text>
-          <Text style={styles.sectionSubtitle}>{t('selectLanguage')}</Text>
+        {/* ═══ SYSTEM STATUS ═══ */}
+        <View style={s.sectionCard}>
+          <View style={s.sectionHeader}>
+            <Text style={s.sectionIcon}>⚡</Text>
+            <Text style={s.sectionTitle}>System Status</Text>
+          </View>
 
-          <View style={styles.languageList}>
-            {LANGUAGES.map((language) => (
+          {/* API */}
+          <View style={s.statusRow}>
+            <View style={s.statusLeft}>
+              <StatusDot status={apiStatus} />
+              <Text style={s.statusLabel}>Prediction API</Text>
+            </View>
+            <Text style={[s.statusValue, {
+              color: apiStatus === 'online' ? COLORS.success : apiStatus === 'offline' ? COLORS.danger : COLORS.warning
+            }]}>
+              {apiStatus === 'checking' ? 'Checking...' : apiStatus.toUpperCase()}
+            </Text>
+          </View>
+
+          {/* Models */}
+          <View style={s.statusRow}>
+            <View style={s.statusLeft}>
+              <Text style={s.statusIcon}>🧠</Text>
+              <Text style={s.statusLabel}>CNN Models</Text>
+            </View>
+            <Text style={[s.statusValue, { color: modelsLoaded > 0 ? COLORS.primary : COLORS.textSecondary }]}>
+              {modelsLoaded > 0 ? `${modelsLoaded} loaded` : '—'}
+            </Text>
+          </View>
+
+          {/* Bot */}
+          <View style={s.statusRow}>
+            <View style={s.statusLeft}>
+              <Text style={s.statusIcon}>🤖</Text>
+              <Text style={s.statusLabel}>Trading Bot</Text>
+            </View>
+            <Text style={[s.statusValue, { color: COLORS.success }]}>24/7 Active</Text>
+          </View>
+
+          {/* Exchange */}
+          <View style={[s.statusRow, { borderBottomWidth: 0 }]}>
+            <View style={s.statusLeft}>
+              <Text style={s.statusIcon}>💱</Text>
+              <Text style={s.statusLabel}>Binance Demo</Text>
+            </View>
+            <Text style={[s.statusValue, { color: COLORS.primary }]}>Connected</Text>
+          </View>
+        </View>
+
+        {/* ═══ MODEL INFO ═══ */}
+        <View style={s.sectionCard}>
+          <View style={s.sectionHeader}>
+            <Text style={s.sectionIcon}>🔬</Text>
+            <Text style={s.sectionTitle}>Model Information</Text>
+          </View>
+
+          <View style={s.infoGrid}>
+            <View style={s.infoBox}>
+              <Text style={s.infoLabel}>Architecture</Text>
+              <Text style={s.infoValue}>CNN 1D-MultiScale</Text>
+            </View>
+            <View style={s.infoBox}>
+              <Text style={s.infoLabel}>Directions</Text>
+              <Text style={s.infoValue}>LONG + SHORT</Text>
+            </View>
+            <View style={s.infoBox}>
+              <Text style={s.infoLabel}>Timeframes</Text>
+              <Text style={s.infoValue}>4h / 1d / 1w</Text>
+            </View>
+            <View style={s.infoBox}>
+              <Text style={s.infoLabel}>Coins</Text>
+              <Text style={s.infoValue}>BTC ETH SOL DOGE AVAX</Text>
+            </View>
+          </View>
+
+          <View style={s.featureRow}>
+            <View style={[s.featureBadge, { borderColor: `${COLORS.success}30` }]}>
+              <Text style={[s.featureText, { color: COLORS.success }]}>Trailing Stop</Text>
+            </View>
+            <View style={[s.featureBadge, { borderColor: `${COLORS.primary}30` }]}>
+              <Text style={[s.featureText, { color: COLORS.primary }]}>Dynamic TP/SL</Text>
+            </View>
+            <View style={[s.featureBadge, { borderColor: `${COLORS.warning}30` }]}>
+              <Text style={[s.featureText, { color: COLORS.warning }]}>Smart Filters</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ═══ LANGUAGE ═══ */}
+        <View style={s.sectionCard}>
+          <View style={s.sectionHeader}>
+            <Text style={s.sectionIcon}>🌍</Text>
+            <Text style={s.sectionTitle}>{t('language')}</Text>
+          </View>
+
+          {LANGUAGES.map(lang => {
+            const active = selectedLang === lang.code;
+            return (
               <TouchableOpacity
-                key={language.code}
-                style={[
-                  styles.languageItem,
-                  selectedLanguage === language.code && styles.languageItemSelected,
-                ]}
-                onPress={() => handleLanguageChange(language.code)}
+                key={lang.code}
+                style={[s.langItem, active && s.langItemActive]}
+                onPress={() => changeLang(lang.code)}
                 activeOpacity={0.7}
               >
-                <View style={styles.languageInfo}>
-                  <Text style={[
-                    styles.languageName,
-                    selectedLanguage === language.code && styles.languageNameSelected,
-                  ]}>
-                    {language.nativeName}
-                  </Text>
-                  <Text style={styles.languageEnglishName}>{language.name}</Text>
+                <Text style={s.langFlag}>{lang.flag}</Text>
+                <View style={s.langInfo}>
+                  <Text style={[s.langNative, active && { color: COLORS.primary }]}>{lang.native}</Text>
+                  <Text style={s.langName}>{lang.name}</Text>
                 </View>
-                {selectedLanguage === language.code && (
-                  <View style={styles.checkmark}>
-                    <Text style={styles.checkmarkText}>✓</Text>
+                {active && (
+                  <View style={s.checkCircle}>
+                    <Text style={s.checkText}>✓</Text>
                   </View>
                 )}
               </TouchableOpacity>
-            ))}
+            );
+          })}
+        </View>
+
+        {/* ═══ ABOUT ═══ */}
+        <View style={s.sectionCard}>
+          <View style={s.sectionHeader}>
+            <Text style={s.sectionIcon}>ℹ️</Text>
+            <Text style={s.sectionTitle}>About</Text>
+          </View>
+
+          <View style={s.aboutRow}>
+            <Text style={s.aboutLabel}>Version</Text>
+            <Text style={s.aboutValue}>2.0 Alpha</Text>
+          </View>
+          <View style={s.aboutRow}>
+            <Text style={s.aboutLabel}>Engine</Text>
+            <Text style={s.aboutValue}>PyTorch CNN</Text>
+          </View>
+          <View style={[s.aboutRow, { borderBottomWidth: 0 }]}>
+            <Text style={s.aboutLabel}>Data</Text>
+            <Text style={s.aboutValue}>Binance Live API</Text>
           </View>
         </View>
 
-        {/* Advanced Tools */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Advanced Tools</Text>
-          <Text style={styles.sectionSubtitle}>Backtest and simulation tools</Text>
-
-          <TouchableOpacity
-            style={styles.toolButton}
-            onPress={() => navigation.navigate('Simulation')}
-            activeOpacity={0.7}
-          >
-            <View style={styles.toolIcon}>
-              <Text style={styles.toolIconText}>📊</Text>
-            </View>
-            <View style={styles.toolInfo}>
-              <Text style={styles.toolName}>Simulation IA</Text>
-              <Text style={styles.toolDescription}>Run backtests on historical data</Text>
-            </View>
-            <Text style={styles.toolArrow}>›</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* About App */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('aboutApp')}</Text>
-
-          <View style={styles.infoCard}>
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>{t('appVersion')}</Text>
-              <Text style={styles.infoValue}>Alpha</Text>
-            </View>
-          </View>
-
-          <Text style={styles.description}>{t('appDescription')}</Text>
-        </View>
-
-        {/* Features */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('features')}</Text>
-
-          <View style={styles.featuresList}>
-            <View style={styles.featureItem}>
-              <Text style={styles.featureBullet}>•</Text>
-              <Text style={styles.featureText}>{t('feature1')}</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Text style={styles.featureBullet}>•</Text>
-              <Text style={styles.featureText}>{t('feature2')}</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Text style={styles.featureBullet}>•</Text>
-              <Text style={styles.featureText}>{t('feature3')}</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Text style={styles.featureBullet}>•</Text>
-              <Text style={styles.featureText}>{t('feature4')}</Text>
-            </View>
-            <View style={styles.featureItem}>
-              <Text style={styles.featureBullet}>•</Text>
-              <Text style={styles.featureText}>{t('feature5')}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Footer */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Powered by Amine</Text>
+        <View style={s.footer}>
+          <Text style={s.footerText}>Powered by Amine</Text>
+          <Text style={s.footerSub}>CNN 1D-MultiScale · Binance · Multi-TF</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
-  scrollContent: {
-    padding: SPACING.md,
-  },
-  header: {
-    marginBottom: SPACING.lg,
-  },
-  title: {
-    fontSize: FONT_SIZES.xxxl,
-    fontWeight: FONT_WEIGHTS.extrabold,
-    color: COLORS.text,
-  },
-  section: {
-    marginBottom: SPACING.xl,
-  },
-  sectionTitle: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  sectionSubtitle: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.md,
-  },
-  languageList: {
-    backgroundColor: COLORS.card,
-    borderRadius: BORDER_RADIUS.lg,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  languageItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: SPACING.md,
-    borderBottomWidth: 1,
-    borderBottomColor: COLORS.border,
-  },
-  languageItemSelected: {
-    backgroundColor: `${COLORS.primary}15`,
-  },
-  languageInfo: {
-    flex: 1,
-  },
-  languageName: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  languageNameSelected: {
-    color: COLORS.primary,
-  },
-  languageEnglishName: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-  },
-  checkmark: {
-    width: 24,
-    height: 24,
-    borderRadius: BORDER_RADIUS.round,
-    backgroundColor: COLORS.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkmarkText: {
-    color: COLORS.background,
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.bold,
-  },
-  infoCard: {
-    backgroundColor: COLORS.card,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  infoLabel: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-  },
-  infoValue: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.text,
-  },
-  description: {
-    fontSize: FONT_SIZES.md,
-    color: COLORS.textSecondary,
-    lineHeight: FONT_SIZES.md * 1.5,
-  },
-  featuresList: {
-    backgroundColor: COLORS.card,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  featureItem: {
-    flexDirection: 'row',
-    marginBottom: SPACING.sm,
-  },
-  featureBullet: {
-    fontSize: FONT_SIZES.lg,
-    color: COLORS.primary,
-    marginRight: SPACING.sm,
-    fontWeight: FONT_WEIGHTS.bold,
-  },
-  featureText: {
-    flex: 1,
-    fontSize: FONT_SIZES.md,
-    color: COLORS.text,
-    lineHeight: FONT_SIZES.md * 1.5,
-  },
-  footer: {
-    alignItems: 'center',
-    paddingVertical: SPACING.xl,
-  },
-  footerText: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textDark,
-    textAlign: 'center',
-  },
-  toolButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.card,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  toolIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: `${COLORS.primary}15`,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: SPACING.md,
-  },
-  toolIconText: {
-    fontSize: 24,
-  },
-  toolInfo: {
-    flex: 1,
-  },
-  toolName: {
-    fontSize: FONT_SIZES.lg,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
-  },
-  toolDescription: {
-    fontSize: FONT_SIZES.sm,
-    color: COLORS.textSecondary,
-  },
-  toolArrow: {
-    fontSize: FONT_SIZES.xxxl,
-    color: COLORS.textSecondary,
-    fontWeight: FONT_WEIGHTS.light,
-  },
+const s = StyleSheet.create({
+  container: { flex: 1, backgroundColor: COLORS.background },
+  scroll: { padding: 16, paddingBottom: 100 },
+
+  header: { paddingTop: 40, marginBottom: 20 },
+  title: { fontSize: 28, fontWeight: '800', color: COLORS.text, letterSpacing: -0.3 },
+  subtitle: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '500', marginTop: 3, letterSpacing: 0.5 },
+
+  sectionCard: { backgroundColor: COLORS.card, borderRadius: 20, borderWidth: 1, borderColor: COLORS.border, padding: 18, marginBottom: 14, ...SHADOWS.small },
+  sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
+  sectionIcon: { fontSize: 18 },
+  sectionTitle: { fontSize: 17, fontWeight: '800', color: COLORS.text, letterSpacing: 0.3 },
+
+  // Status
+  statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  statusLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  statusDot: { width: 8, height: 8, borderRadius: 4 },
+  statusIcon: { fontSize: 14 },
+  statusLabel: { fontSize: 14, color: COLORS.text, fontWeight: '600' },
+  statusValue: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
+
+  // Model info
+  infoGrid: { gap: 8, marginBottom: 12 },
+  infoBox: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
+  infoLabel: { fontSize: 12, color: COLORS.textSecondary, fontWeight: '600' },
+  infoValue: { fontSize: 12, color: COLORS.text, fontWeight: '700' },
+  featureRow: { flexDirection: 'row', gap: 6, flexWrap: 'wrap' },
+  featureBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, backgroundColor: 'rgba(255,255,255,0.02)' },
+  featureText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+
+  // Language
+  langItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border, gap: 12 },
+  langItemActive: { backgroundColor: `${COLORS.primary}08`, marginHorizontal: -18, paddingHorizontal: 18, borderRadius: 0 },
+  langFlag: { fontSize: 22 },
+  langInfo: { flex: 1 },
+  langNative: { fontSize: 16, fontWeight: '700', color: COLORS.text },
+  langName: { fontSize: 11, color: COLORS.textSecondary, marginTop: 1 },
+  checkCircle: { width: 24, height: 24, borderRadius: 12, backgroundColor: COLORS.primary, justifyContent: 'center', alignItems: 'center' },
+  checkText: { color: COLORS.background, fontSize: 13, fontWeight: '800' },
+
+  // About
+  aboutRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  aboutLabel: { fontSize: 13, color: COLORS.textSecondary },
+  aboutValue: { fontSize: 13, color: COLORS.text, fontWeight: '700' },
+
+  footer: { alignItems: 'center', paddingVertical: 24 },
+  footerText: { fontSize: 12, color: COLORS.textDark, fontWeight: '600' },
+  footerSub: { fontSize: 10, color: COLORS.textDark, marginTop: 3 },
 });
 
 export default SettingsScreen;

@@ -1,11 +1,11 @@
-// App Navigator - Navigation configuration with bottom tabs
+// App Navigator — Premium Navigation with custom tab bar
 import React, { useEffect } from 'react';
-import { Text } from 'react-native';
+import { View, Text, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useTranslation } from 'react-i18next';
-import { COLORS, FONT_SIZES } from '../config/theme';
+import { COLORS } from '../config/theme';
 import { RootStackParamList, TabParamList } from '../types';
 import HomeScreen from '../screens/HomeScreen';
 import DetailScreen from '../screens/DetailScreen';
@@ -19,83 +19,79 @@ import DatabaseService from '../services/databaseService';
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
 
-// Bottom Tab Navigator
-const BottomTabs: React.FC = () => {
-  const { t } = useTranslation();
+const TAB_ICONS: Record<string, { icon: string; label: string }> = {
+  HomeTab: { icon: '◉', label: 'Home' },
+  SignalsTab: { icon: '📡', label: 'Signals' },
+  PortfolioTab: { icon: '📊', label: 'Trades' },
+  SettingsTab: { icon: '⚙', label: 'Settings' },
+};
 
+const BottomTabs: React.FC = () => {
   return (
     <Tab.Navigator
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: COLORS.card,
+          backgroundColor: 'rgba(26, 31, 58, 0.95)',
           borderTopWidth: 1,
-          borderTopColor: COLORS.border,
-          height: 60,
-          paddingBottom: 8,
+          borderTopColor: 'rgba(42, 48, 80, 0.6)',
+          height: Platform.OS === 'ios' ? 85 : 65,
+          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
           paddingTop: 8,
+          elevation: 20,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 12,
         },
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textSecondary,
-        tabBarLabelStyle: {
-          fontSize: FONT_SIZES.sm,
-          fontWeight: '600',
+        tabBarLabel: ({ focused, color }) => {
+          const { label } = TAB_ICONS[route.name] || { label: '' };
+          return (
+            <Text style={{
+              fontSize: 10,
+              fontWeight: focused ? '800' : '600',
+              color,
+              letterSpacing: focused ? 0.5 : 0,
+              marginTop: -2,
+            }}>
+              {label}
+            </Text>
+          );
         },
-      }}
+        tabBarIcon: ({ focused, color }) => {
+          const { icon } = TAB_ICONS[route.name] || { icon: '●' };
+          return (
+            <View style={focused ? styles.activeIconWrap : undefined}>
+              <Text style={{
+                fontSize: focused ? 24 : 22,
+                color,
+                textAlign: 'center',
+              }}>
+                {icon}
+              </Text>
+              {focused && <View style={[styles.activeDot, { backgroundColor: COLORS.primary }]} />}
+            </View>
+          );
+        },
+      })}
     >
-      <Tab.Screen
-        name="HomeTab"
-        component={HomeScreen}
-        options={{
-          tabBarLabel: t('home'),
-          tabBarIcon: ({ color }) => (
-            <Text style={{ fontSize: 26, color, fontWeight: 'bold' }}>◉</Text>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="SignalsTab"
-        component={SignalsScreen}
-        options={{
-          tabBarLabel: 'Signals',
-          tabBarIcon: ({ color }) => (
-            <Text style={{ fontSize: 26, color, fontWeight: 'bold' }}>📡</Text>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="PortfolioTab"
-        component={LiveTradingScreen}
-        options={{
-          tabBarLabel: 'Trades',
-          tabBarIcon: ({ color }) => (
-            <Text style={{ fontSize: 26, color, fontWeight: 'bold' }}>📊</Text>
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="SettingsTab"
-        component={SettingsScreen}
-        options={{
-          tabBarLabel: t('settings'),
-          tabBarIcon: ({ color }) => (
-            <Text style={{ fontSize: 26, color, fontWeight: 'bold' }}>⚙</Text>
-          ),
-        }}
-      />
+      <Tab.Screen name="HomeTab" component={HomeScreen} />
+      <Tab.Screen name="SignalsTab" component={SignalsScreen} />
+      <Tab.Screen name="PortfolioTab" component={LiveTradingScreen} />
+      <Tab.Screen name="SettingsTab" component={SettingsScreen} />
     </Tab.Navigator>
   );
 };
 
-// Main App Navigator
 const AppNavigator: React.FC = () => {
   const { i18n } = useTranslation();
 
   useEffect(() => {
-    // Load saved language on app start
     const loadLanguage = async () => {
-      const savedLanguage = await DatabaseService.getLanguage();
-      i18n.changeLanguage(savedLanguage);
+      const saved = await DatabaseService.getLanguage();
+      i18n.changeLanguage(saved);
     };
     loadLanguage();
   }, [i18n]);
@@ -118,42 +114,28 @@ const AppNavigator: React.FC = () => {
         screenOptions={{
           headerShown: false,
           animation: 'slide_from_right',
-          contentStyle: {
-            backgroundColor: COLORS.background,
-          },
+          contentStyle: { backgroundColor: COLORS.background },
         }}
       >
-        <Stack.Screen
-          name="HomeTabs"
-          component={BottomTabs}
-          options={{
-            title: 'Crypto Adviser',
-          }}
-        />
-        <Stack.Screen
-          name="Detail"
-          component={DetailScreen}
-          options={{
-            title: 'Crypto Details',
-          }}
-        />
-        <Stack.Screen
-          name="TradeDetail"
-          component={TradeDetailScreen}
-          options={{
-            title: 'Trade Details',
-          }}
-        />
-        <Stack.Screen
-          name="Simulation"
-          component={SimulationScreen}
-          options={{
-            title: 'Simulation IA',
-          }}
-        />
+        <Stack.Screen name="HomeTabs" component={BottomTabs} />
+        <Stack.Screen name="Detail" component={DetailScreen} />
+        <Stack.Screen name="TradeDetail" component={TradeDetailScreen} />
+        <Stack.Screen name="Simulation" component={SimulationScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
 };
+
+const styles = StyleSheet.create({
+  activeIconWrap: {
+    alignItems: 'center',
+  },
+  activeDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    marginTop: 2,
+  },
+});
 
 export default AppNavigator;
