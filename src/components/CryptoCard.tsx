@@ -1,8 +1,10 @@
-// CryptoCard Component - Display crypto in list
+// CryptoCard — Premium glassmorphism card with signal prominence
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
 import { COLORS, SPACING, FONT_SIZES, FONT_WEIGHTS, BORDER_RADIUS, SHADOWS } from '../config/theme';
 import { CryptoPrediction } from '../types';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface CryptoCardProps {
   crypto: CryptoPrediction;
@@ -11,105 +13,98 @@ interface CryptoCardProps {
   onToggleFavorite?: () => void;
 }
 
+const COIN_ICONS: Record<string, string> = {
+  bitcoin: '₿', ethereum: 'Ξ', solana: '◎', dogecoin: 'Ð', avalanche: '▲',
+};
+
 const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onPress, isFavorite = false, onToggleFavorite }) => {
-  const formatSymbol = (symbol: string) => {
-    return symbol.toUpperCase().replace('USDT', '/USDT');
-  };
+  const signal = crypto.signal || 'HOLD';
+  const confidence = crypto.confidence || 0;
+  const price = crypto.current_price || 0;
+  const direction = (crypto as any).direction;
 
-  const getSignalColor = (signal: string) => {
-    switch (signal) {
-      case 'BUY':
-        return COLORS.success;
-      case 'SELL':
-        return COLORS.danger;
-      case 'HOLD':
-        return COLORS.warning;
-      default:
-        return COLORS.textSecondary;
-    }
-  };
-
-  const getSignalBackgroundColor = (signal: string) => {
-    switch (signal) {
-      case 'BUY':
-        return `${COLORS.success}20`;
-      case 'SELL':
-        return `${COLORS.danger}20`;
-      case 'HOLD':
-        return `${COLORS.warning}20`;
-      default:
-        return `${COLORS.textSecondary}20`;
-    }
-  };
+  const signalColor = signal === 'BUY' ? COLORS.success : signal === 'SELL' ? COLORS.danger : COLORS.warning;
+  const signalGlow = signal === 'BUY' ? 'rgba(0,255,136,0.15)' : signal === 'SELL' ? 'rgba(255,51,102,0.15)' : 'rgba(255,184,0,0.08)';
+  const coinIcon = COIN_ICONS[crypto.crypto] || '●';
 
   const handleFavoritePress = (e: any) => {
     e.stopPropagation();
-    if (onToggleFavorite) {
-      onToggleFavorite();
-    }
+    onToggleFavorite?.();
+  };
+
+  const formatPrice = (p: number) => {
+    if (p >= 1000) return `$${p.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    if (p >= 1) return `$${p.toFixed(2)}`;
+    return `$${p.toFixed(4)}`;
   };
 
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
-      <View style={styles.header}>
-        <View style={styles.leftSection}>
-          <View style={styles.symbolRow}>
-            <Text style={styles.symbol}>{formatSymbol(crypto.symbol)}</Text>
-            {onToggleFavorite && (
-              <TouchableOpacity onPress={handleFavoritePress} activeOpacity={0.7} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                <Text style={styles.favoriteIcon}>{isFavorite ? '⭐' : '☆'}</Text>
-              </TouchableOpacity>
+    <TouchableOpacity
+      style={[styles.card, { borderColor: `${signalColor}30`, shadowColor: signalColor }]}
+      onPress={onPress}
+      activeOpacity={0.85}
+    >
+      {/* Signal glow strip */}
+      <View style={[styles.glowStrip, { backgroundColor: signalGlow }]} />
+
+      {/* Main content */}
+      <View style={styles.content}>
+        {/* Top row: coin info + price */}
+        <View style={styles.topRow}>
+          <View style={styles.coinInfo}>
+            <View style={[styles.iconCircle, { borderColor: `${signalColor}40` }]}>
+              <Text style={[styles.coinIcon, { color: signalColor }]}>{coinIcon}</Text>
+            </View>
+            <View style={styles.nameBlock}>
+              <View style={styles.nameRow}>
+                <Text style={styles.coinName}>{crypto.name}</Text>
+                {onToggleFavorite && (
+                  <TouchableOpacity onPress={handleFavoritePress} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+                    <Text style={styles.favIcon}>{isFavorite ? '★' : '☆'}</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Text style={styles.symbol}>{crypto.symbol?.replace('USDT', '') || ''}</Text>
+            </View>
+          </View>
+
+          <View style={styles.priceBlock}>
+            <Text style={styles.price}>{formatPrice(price)}</Text>
+          </View>
+        </View>
+
+        {/* Bottom row: signal + confidence + direction */}
+        <View style={styles.bottomRow}>
+          {/* Signal badge */}
+          <View style={[styles.signalBadge, { backgroundColor: `${signalColor}18`, borderColor: `${signalColor}50` }]}>
+            <View style={[styles.signalDot, { backgroundColor: signalColor }]} />
+            <Text style={[styles.signalText, { color: signalColor }]}>{signal}</Text>
+            {direction && (
+              <Text style={[styles.directionText, { color: signalColor }]}>
+                {direction === 'LONG' ? '↑' : '↓'} {direction}
+              </Text>
             )}
           </View>
-          <Text style={styles.name}>{crypto.name}</Text>
-        </View>
-        <View style={styles.rightSection}>
-          <Text style={styles.price}>${(crypto.current_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
-        </View>
-      </View>
 
-      <View style={styles.footer}>
-        <View style={[styles.signalBadge, { backgroundColor: getSignalBackgroundColor(crypto.signal) }]}>
-          <Text style={[styles.signalText, { color: getSignalColor(crypto.signal) }]}>
-            {crypto.signal}
-          </Text>
-        </View>
-
-        <View style={styles.confidenceContainer}>
-          <Text style={styles.confidenceLabel}>Confidence</Text>
-          <View style={styles.confidenceBar}>
-            <View
-              style={[
-                styles.confidenceFill,
-                {
-                  width: `${(crypto.confidence || 0) * 100}%`,
-                  backgroundColor: getSignalColor(crypto.signal)
-                }
-              ]}
-            />
-          </View>
-          <Text style={styles.confidenceValue}>{((crypto.confidence || 0) * 100).toFixed(1)}%</Text>
-        </View>
-      </View>
-
-      {crypto.risk_management && (
-        <View style={styles.riskPreview}>
-          <View style={styles.riskItem}>
-            <Text style={styles.riskLabel}>Target</Text>
-            <Text style={styles.riskValue}>${crypto.risk_management.target_price.toFixed(2)}</Text>
-          </View>
-          <View style={styles.riskItem}>
-            <Text style={styles.riskLabel}>Stop Loss</Text>
-            <Text style={styles.riskValue}>${crypto.risk_management.stop_loss.toFixed(2)}</Text>
-          </View>
-          <View style={styles.riskItem}>
-            <Text style={styles.riskLabel}>R:R</Text>
-            <Text style={[styles.riskValue, { color: COLORS.primary }]}>
-              {crypto.risk_management.risk_reward_ratio.toFixed(2)}
+          {/* Confidence meter */}
+          <View style={styles.confidenceBlock}>
+            <View style={styles.confBarOuter}>
+              <View style={[styles.confBarInner, { width: `${confidence * 100}%`, backgroundColor: signalColor }]} />
+            </View>
+            <Text style={[styles.confValue, { color: signalColor }]}>
+              {(confidence * 100).toFixed(0)}%
             </Text>
           </View>
+
+          {/* TP/SL mini */}
+          {crypto.risk_management && (
+            <View style={styles.tpslMini}>
+              <Text style={styles.tpText}>TP {crypto.risk_management.take_profit_pct?.toFixed(1) || crypto.risk_management.potential_gain_percent?.toFixed(1) || '—'}%</Text>
+              <Text style={styles.slText}>SL {crypto.risk_management.stop_loss_pct?.toFixed(1) || crypto.risk_management.potential_loss_percent?.toFixed(1) || '—'}%</Text>
+            </View>
+          )}
         </View>
-      )}
+      </View>
     </TouchableOpacity>
   );
 };
@@ -117,111 +112,145 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onPress, isFavorite = f
 const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.card,
-    borderRadius: BORDER_RADIUS.lg,
-    padding: SPACING.md,
-    marginBottom: SPACING.md,
+    borderRadius: 20,
+    marginBottom: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    overflow: 'hidden',
     ...SHADOWS.medium,
   },
-  header: {
+  glowStrip: {
+    height: 3,
+    width: '100%',
+  },
+  content: {
+    padding: 16,
+  },
+  topRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: SPACING.md,
+    marginBottom: 14,
   },
-  leftSection: {
-    flex: 1,
-  },
-  rightSection: {
-    alignItems: 'flex-end',
-  },
-  symbolRow: {
+  coinInfo: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: SPACING.xs,
+    flex: 1,
+  },
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderWidth: 1.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  coinIcon: {
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  nameBlock: {
+    flex: 1,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  coinName: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.text,
+    letterSpacing: 0.3,
+  },
+  favIcon: {
+    fontSize: 16,
+    color: '#FFB800',
   },
   symbol: {
-    fontSize: FONT_SIZES.xl,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: COLORS.text,
-    marginRight: SPACING.sm,
-  },
-  favoriteIcon: {
-    fontSize: FONT_SIZES.xl,
-    lineHeight: FONT_SIZES.xl + 4,
-  },
-  name: {
-    fontSize: FONT_SIZES.sm,
+    fontSize: 12,
     color: COLORS.textSecondary,
+    fontWeight: '500',
+    marginTop: 2,
+    letterSpacing: 1,
+  },
+  priceBlock: {
+    alignItems: 'flex-end',
   },
   price: {
-    fontSize: FONT_SIZES.xxl,
-    fontWeight: FONT_WEIGHTS.bold,
-    color: COLORS.primary,
+    fontSize: 22,
+    fontWeight: '800',
+    color: COLORS.text,
+    letterSpacing: -0.5,
   },
-  footer: {
+  bottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    gap: 10,
   },
   signalBadge: {
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-    borderRadius: BORDER_RADIUS.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    gap: 5,
+  },
+  signalDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
   },
   signalText: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.bold,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 0.8,
   },
-  confidenceContainer: {
+  directionText: {
+    fontSize: 11,
+    fontWeight: '700',
+    marginLeft: 2,
+  },
+  confidenceBlock: {
     flex: 1,
-    marginLeft: SPACING.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
-  confidenceLabel: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
-  },
-  confidenceBar: {
-    height: 6,
-    backgroundColor: COLORS.cardSecondary,
-    borderRadius: BORDER_RADIUS.sm,
+  confBarOuter: {
+    flex: 1,
+    height: 5,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: 3,
     overflow: 'hidden',
-    marginBottom: SPACING.xs,
   },
-  confidenceFill: {
+  confBarInner: {
     height: '100%',
-    borderRadius: BORDER_RADIUS.sm,
+    borderRadius: 3,
   },
-  confidenceValue: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.text,
+  confValue: {
+    fontSize: 13,
+    fontWeight: '800',
+    minWidth: 32,
     textAlign: 'right',
   },
-  riskPreview: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: SPACING.md,
-    paddingTop: SPACING.md,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+  tpslMini: {
+    alignItems: 'flex-end',
+    gap: 1,
   },
-  riskItem: {
-    alignItems: 'center',
+  tpText: {
+    fontSize: 10,
+    color: COLORS.success,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
-  riskLabel: {
-    fontSize: FONT_SIZES.xs,
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.xs,
-  },
-  riskValue: {
-    fontSize: FONT_SIZES.md,
-    fontWeight: FONT_WEIGHTS.semibold,
-    color: COLORS.text,
+  slText: {
+    fontSize: 10,
+    color: COLORS.danger,
+    fontWeight: '600',
+    letterSpacing: 0.3,
   },
 });
 
