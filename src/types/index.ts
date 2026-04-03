@@ -21,11 +21,18 @@ export interface CryptoPrediction {
   name: string;
   signal: 'BUY' | 'SELL' | 'HOLD';
   confidence: number;
-  probabilities?: Probabilities; // Optional - V6 only
-  threshold?: number; // V11 optimal threshold
-  model_version?: string; // Model version (v11_temporal, v6, etc.)
-  current_price: number;
-  risk_management: RiskManagement | null;
+  direction?: 'LONG' | 'SHORT' | null;
+  long_confidence?: number | null;
+  short_confidence?: number | null;
+  long_filter?: string | null;
+  short_filter?: string | null;
+  model?: string | null;
+  data_source?: string | null;
+  probabilities?: Probabilities | null;
+  threshold?: number | null;
+  model_version?: string | null;
+  current_price: number | null;
+  risk_management: any | null;
   timestamp: string;
 }
 
