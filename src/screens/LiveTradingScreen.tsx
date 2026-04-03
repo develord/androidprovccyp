@@ -27,6 +27,9 @@ interface Position {
   pnl: number;
   pnlPercent: number;
   margin: number;
+  tpPrice: number | null;
+  slPrice: number | null;
+  progressPercent: number; // % towards TP (0-100)
 }
 
 interface TradeHistory {
@@ -73,6 +76,17 @@ const LiveTradingScreen: React.FC = () => {
         headers: { 'X-MBX-APIKEY': API_KEY },
       });
 
+      // Fetch open orders (TP LIMIT orders)
+      const ordParams = signRequest({ timestamp: Date.now(), recvWindow: 10000 });
+      let openOrders: any[] = [];
+      try {
+        const ordRes = await axios.get(`${DEMO_API}/fapi/v1/openOrders`, {
+          params: ordParams,
+          headers: { 'X-MBX-APIKEY': API_KEY },
+        });
+        openOrders = ordRes.data;
+      } catch (e) {}
+
       const openPositions: Position[] = [];
       let pnlTotal = 0;
 
@@ -90,6 +104,34 @@ const LiveTradingScreen: React.FC = () => {
 
         pnlTotal += pnl;
 
+        // Find TP order for this symbol
+        const tpOrder = openOrders.find(
+          (o: any) => o.symbol === pos.symbol && o.type === 'LIMIT' && o.reduceOnly
+        );
+        const tpPrice = tpOrder ? parseFloat(tpOrder.price) : null;
+
+        // Estimate SL (TP * 2 distance from entry, opposite direction)
+        let slPrice: number | null = null;
+        if (tpPrice && entry > 0) {
+          if (side === 'LONG') {
+            const tpDist = tpPrice - entry;
+            slPrice = entry - tpDist * 0.5;
+          } else {
+            const tpDist = entry - tpPrice;
+            slPrice = entry + tpDist * 0.5;
+          }
+        }
+
+        // Calculate progress towards TP (0-100%)
+        let progress = 0;
+        if (tpPrice && entry > 0) {
+          const totalDist = Math.abs(tpPrice - entry);
+          const currentDist = side === 'LONG'
+            ? mark - entry
+            : entry - mark;
+          progress = totalDist > 0 ? Math.min(Math.max((currentDist / totalDist) * 100, -50), 100) : 0;
+        }
+
         openPositions.push({
           symbol: pos.symbol,
           side,
@@ -99,6 +141,9 @@ const LiveTradingScreen: React.FC = () => {
           pnl,
           pnlPercent: pnlPct,
           margin: parseFloat(pos.initialMargin || '0'),
+          tpPrice,
+          slPrice,
+          progressPercent: progress,
         });
       }
 
@@ -162,6 +207,25 @@ const LiveTradingScreen: React.FC = () => {
           </Text>
         </View>
 
+        {/* Progress Bar */}
+        {item.tpPrice && (
+          <View style={styles.progressSection}>
+            <View style={styles.progressLabels}>
+              <Text style={styles.progressSL}>SL</Text>
+              <Text style={styles.progressTP}>TP {item.progressPercent.toFixed(0)}%</Text>
+            </View>
+            <View style={styles.progressBar}>
+              <View style={[
+                styles.progressFill,
+                {
+                  width: `${Math.max(0, Math.min(item.progressPercent, 100))}%`,
+                  backgroundColor: item.progressPercent >= 0 ? '#22c55e' : '#ef4444',
+                },
+              ]} />
+            </View>
+          </View>
+        )}
+
         <View style={styles.cardBody}>
           <View style={styles.row}>
             <Text style={styles.label}>Entry</Text>
@@ -169,8 +233,22 @@ const LiveTradingScreen: React.FC = () => {
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Mark</Text>
-            <Text style={styles.value}>${item.markPrice.toFixed(4)}</Text>
+            <Text style={[styles.value, isProfit ? styles.profit : styles.loss]}>
+              ${item.markPrice.toFixed(4)}
+            </Text>
           </View>
+          {item.tpPrice && (
+            <View style={styles.row}>
+              <Text style={[styles.label, { color: '#22c55e' }]}>TP Target</Text>
+              <Text style={[styles.value, { color: '#22c55e' }]}>${item.tpPrice.toFixed(4)}</Text>
+            </View>
+          )}
+          {item.slPrice && (
+            <View style={styles.row}>
+              <Text style={[styles.label, { color: '#ef4444' }]}>Stop Loss</Text>
+              <Text style={[styles.value, { color: '#ef4444' }]}>${item.slPrice.toFixed(4)}</Text>
+            </View>
+          )}
           <View style={styles.row}>
             <Text style={styles.label}>Size</Text>
             <Text style={styles.value}>{item.quantity} {coin}</Text>
@@ -343,6 +421,13 @@ const styles = StyleSheet.create({
   shortBadge: { backgroundColor: '#ef444430' },
   badgeText: { fontSize: 11, fontWeight: 'bold', color: COLORS.text },
   pnlText: { fontSize: 20, fontWeight: 'bold' },
+
+  progressSection: { marginBottom: 10 },
+  progressLabels: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+  progressSL: { fontSize: 11, color: '#ef4444', fontWeight: 'bold' },
+  progressTP: { fontSize: 11, color: '#22c55e', fontWeight: 'bold' },
+  progressBar: { height: 6, backgroundColor: '#333', borderRadius: 3, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: 3 },
 
   cardBody: { gap: 6 },
   row: { flexDirection: 'row', justifyContent: 'space-between' },
