@@ -113,7 +113,7 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
     return COLORS.danger;
   };
 
-  const displayPrice = livePrice ?? crypto.current_price;
+  const displayPrice = livePrice ?? crypto.current_price ?? 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -195,7 +195,7 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={styles.confidenceContainer}>
               <Text style={styles.confidenceLabel}>Confidence</Text>
               <Text style={styles.confidenceValue}>
-                {(crypto.confidence * 100).toFixed(1)}%
+                {((crypto.confidence || 0) * 100).toFixed(1)}%
               </Text>
               <Text style={[styles.confidenceLevel, { color: getConfidenceLevelColor(crypto.confidence) }]}>
                 {getConfidenceLevel(crypto.confidence)}
@@ -236,7 +236,7 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>LONG Confidence</Text>
               <Text style={styles.infoValue}>
-                {((crypto as any).long_confidence * 100).toFixed(1)}%
+                {(((crypto as any).long_confidence || 0) * 100).toFixed(1)}%
               </Text>
             </View>
           )}
@@ -245,7 +245,7 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>SHORT Confidence</Text>
               <Text style={styles.infoValue}>
-                {((crypto as any).short_confidence * 100).toFixed(1)}%
+                {(((crypto as any).short_confidence || 0) * 100).toFixed(1)}%
               </Text>
             </View>
           )}
