@@ -64,7 +64,7 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onPress, isFavorite = f
           <Text style={styles.name}>{crypto.name}</Text>
         </View>
         <View style={styles.rightSection}>
-          <Text style={styles.price}>${crypto.current_price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+          <Text style={styles.price}>${(crypto.current_price || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
         </View>
       </View>
 
@@ -82,13 +82,13 @@ const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onPress, isFavorite = f
               style={[
                 styles.confidenceFill,
                 {
-                  width: `${crypto.confidence * 100}%`,
+                  width: `${(crypto.confidence || 0) * 100}%`,
                   backgroundColor: getSignalColor(crypto.signal)
                 }
               ]}
             />
           </View>
-          <Text style={styles.confidenceValue}>{(crypto.confidence * 100).toFixed(1)}%</Text>
+          <Text style={styles.confidenceValue}>{((crypto.confidence || 0) * 100).toFixed(1)}%</Text>
         </View>
       </View>
 

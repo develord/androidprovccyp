@@ -9,8 +9,12 @@ interface ActionAdviceProps {
 }
 
 const ActionAdvice: React.FC<ActionAdviceProps> = ({ prediction }) => {
+  if (!prediction) return null;
+
   const getAdviceConfig = () => {
-    const { signal, confidence, risk_management } = prediction;
+    const signal = prediction.signal || 'HOLD';
+    const confidence = prediction.confidence || 0;
+    const risk_management = prediction.risk_management;
 
     switch (signal) {
       case 'BUY':
