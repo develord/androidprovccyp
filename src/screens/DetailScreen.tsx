@@ -216,22 +216,70 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
           </View>
         </View>
 
-        {/* Additional Info */}
+        {/* CNN Model Details */}
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>Additional Information</Text>
+          <Text style={styles.infoTitle}>CNN Prediction Details</Text>
+
+          {(crypto as any).direction && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Direction</Text>
+              <Text style={[styles.infoValue, {
+                color: (crypto as any).direction === 'LONG' ? COLORS.success : COLORS.danger,
+                fontWeight: 'bold'
+              }]}>
+                {(crypto as any).direction}
+              </Text>
+            </View>
+          )}
+
+          {(crypto as any).long_confidence != null && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>LONG Confidence</Text>
+              <Text style={styles.infoValue}>
+                {((crypto as any).long_confidence * 100).toFixed(1)}%
+              </Text>
+            </View>
+          )}
+
+          {(crypto as any).short_confidence != null && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>SHORT Confidence</Text>
+              <Text style={styles.infoValue}>
+                {((crypto as any).short_confidence * 100).toFixed(1)}%
+              </Text>
+            </View>
+          )}
+
+          {(crypto as any).long_filter && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>LONG Filter</Text>
+              <Text style={[styles.infoValue, { color: COLORS.warning }]}>
+                {(crypto as any).long_filter}
+              </Text>
+            </View>
+          )}
+
+          {(crypto as any).short_filter && (
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>SHORT Filter</Text>
+              <Text style={[styles.infoValue, { color: COLORS.warning }]}>
+                {(crypto as any).short_filter}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Crypto ID</Text>
-            <Text style={styles.infoValue}>{crypto.crypto}</Text>
+            <Text style={styles.infoLabel}>Model</Text>
+            <Text style={styles.infoValue}>{(crypto as any).model || 'CNN_1D_MultiScale'}</Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Symbol</Text>
-            <Text style={styles.infoValue}>{formatSymbol(crypto.symbol)}</Text>
+            <Text style={styles.infoLabel}>Data Source</Text>
+            <Text style={styles.infoValue}>{(crypto as any).data_source || 'binance_live'}</Text>
           </View>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Model Timestamp</Text>
+            <Text style={styles.infoLabel}>Updated</Text>
             <Text style={styles.infoValue}>
               {new Date(crypto.timestamp).toLocaleString()}
             </Text>
@@ -249,18 +297,9 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
           />
         )}
 
-        {/* Virtual Trade Button */}
-        <TouchableOpacity
-          style={styles.tradeButton}
-          onPress={() => setTradeModalVisible(true)}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.tradeButtonText}>{t('createVirtualTrade')}</Text>
-        </TouchableOpacity>
-
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            Powered by V11 TEMPORAL Multi-Timeframe Models & Binance API
+            CNN 1D-MultiScale LONG+SHORT | Binance Live Data
           </Text>
         </View>
       </ScrollView>
