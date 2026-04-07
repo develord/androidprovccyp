@@ -1,6 +1,7 @@
 // API Service - CNN Prediction API
 import axios, { AxiosInstance } from 'axios';
 import { API_CONFIG } from '../config/api';
+import AuthService from './authService';
 
 // Types for CNN API responses
 export interface CryptoPrediction {
@@ -47,6 +48,34 @@ class APIService {
       headers: { 'Content-Type': 'application/json' },
     });
     this.cache = new Map();
+
+    // Request interceptor: attach JWT + API key
+    this.client.interceptors.request.use(async config => {
+      config.headers['X-API-Key'] = API_CONFIG.API_KEY;
+      const token = await AuthService.getAccessToken();
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    });
+
+    // Response interceptor: auto-refresh on 401
+    this.client.interceptors.response.use(
+      response => response,
+      async error => {
+        const originalRequest = error.config;
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          const newToken = await AuthService.refreshToken();
+          if (newToken) {
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return this.client(originalRequest);
+          }
+          // Refresh failed — AuthService already cleared tokens
+        }
+        return Promise.reject(error);
+      },
+    );
   }
 
   /**
@@ -114,6 +143,82 @@ class APIService {
     } catch (error) {
       console.error('Health check failed:', error);
       throw new Error('API health check failed');
+    }
+  }
+
+  // ---- Credits API ----
+
+  async getCredits(): Promise<{ balance: number; last_updated: string }> {
+    try {
+      const response = await this.client.get(API_CONFIG.ENDPOINTS.CREDITS);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching credits:', error);
+      throw new Error('Failed to fetch credits');
+    }
+  }
+
+  async earnCredits(adId: string): Promise<{ balance: number; last_updated: string }> {
+    try {
+      const response = await this.client.post(API_CONFIG.ENDPOINTS.CREDITS_EARN, {
+        ad_id: adId,
+        reward_amount: 3,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error earning credits:', error);
+      throw new Error('Failed to earn credits');
+    }
+  }
+
+  async spendCredits(crypto: string): Promise<{ success: boolean; balance: number; crypto: string }> {
+    try {
+      const response = await this.client.post(API_CONFIG.ENDPOINTS.CREDITS_SPEND, {
+        crypto,
+        amount: 3,
+      });
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        return { success: false, balance: 0, crypto };
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Get technical analysis for a crypto
+   */
+  async getTechnicalAnalysis(crypto: string): Promise<any> {
+    try {
+      const cacheKey = `analysis_${crypto}`;
+      const cached = this.getFromCache(cacheKey);
+      if (cached) return cached;
+
+      const response = await this.client.get(`/api/analysis/${crypto}`);
+      this.setCache(cacheKey, response.data);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching analysis for ${crypto}:`, error);
+      throw new Error(`Failed to fetch analysis for ${crypto}`);
+    }
+  }
+
+  /**
+   * Get crypto news with sentiment classification
+   */
+  async getNews(): Promise<any> {
+    try {
+      const cacheKey = 'news';
+      const cached = this.getFromCache(cacheKey);
+      if (cached) return cached;
+
+      const response = await this.client.get('/api/news');
+      this.setCache(cacheKey, response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching news:', error);
+      throw new Error('Failed to fetch news');
     }
   }
 

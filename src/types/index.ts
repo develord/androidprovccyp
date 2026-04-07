@@ -105,21 +105,58 @@ export interface VirtualTrade {
   }>;
 }
 
+// Auth Types
+export interface User {
+  id: number;
+  email: string | null;
+  name: string | null;
+  avatar: string | null;
+  auth_provider: 'google' | 'binance';
+  created_at: string;
+  last_login: string;
+}
+
+export interface AuthResponse {
+  access_token: string;
+  refresh_token: string;
+  token_type: string;
+  expires_in: number;
+  user: User;
+}
+
 // App Navigation Types
 import type { NavigatorScreenParams } from '@react-navigation/native';
 
 export type TabParamList = {
   HomeTab: undefined;
+  SignalsTab: undefined;
+  NewsTab: undefined;
   PortfolioTab: undefined;
   SettingsTab: undefined;
 };
 
 export type RootStackParamList = {
+  Splash: undefined;
+  Login: undefined;
   HomeTabs: NavigatorScreenParams<TabParamList> | undefined;
   Detail: { crypto: CryptoPrediction };
   TradeDetail: { trade: VirtualTrade };
   Simulation: undefined;
 };
+
+// Credits Types
+export interface CreditsInfo {
+  balance: number;
+  last_updated: string;
+}
+
+export interface CreditTransaction {
+  id: number;
+  amount: number;
+  type: 'earn_ad' | 'spend_view' | 'bonus_signup';
+  crypto: string | null;
+  timestamp: string;
+}
 
 // Stats for Home Screen
 export interface Stats {
