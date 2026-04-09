@@ -288,7 +288,7 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
             <View style={s.modelRow}>
               <View style={s.modelItem}>
                 <Text style={s.modelLabel}>{t('modelLabel')}</Text>
-                <Text style={s.modelValue}>{model || 'CNN_1D'}</Text>
+                <Text style={s.modelValue}>XHunter AI v3</Text>
               </View>
               <View style={s.modelDivider} />
               <View style={s.modelItem}>
@@ -330,7 +330,7 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
         {/* FOOTER */}
         <View style={s.footer}>
-          <Text style={s.footerText}>CNN 1D-MultiScale · Binance Live · Multi-TF 4h/1d/1w</Text>
+          <Text style={s.footerText}>XHunter AI Engine · Binance Live · Multi-Timeframe</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

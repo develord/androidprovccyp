@@ -19,6 +19,12 @@ const COIN_IMAGES: Record<string, string> = {
   solana: 'https://assets.coingecko.com/coins/images/4128/small/solana.png',
   dogecoin: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
   avalanche: 'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png',
+  xrp: 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
+  chainlink: 'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png',
+  cardano: 'https://assets.coingecko.com/coins/images/975/small/cardano.png',
+  near: 'https://assets.coingecko.com/coins/images/10365/small/near.jpg',
+  polkadot: 'https://assets.coingecko.com/coins/images/12171/small/polkadot.png',
+  filecoin: 'https://assets.coingecko.com/coins/images/12817/small/filecoin.png',
 };
 
 const CryptoCard: React.FC<CryptoCardProps> = ({ crypto, onPress, isFavorite = false, onToggleFavorite }) => {

@@ -1,21 +1,22 @@
 // HomeScreen — All Binance Cryptos with Technical Data
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, RefreshControl,
   ActivityIndicator, StatusBar, TouchableOpacity, Image, TextInput,
 } from 'react-native';
-import { NativeStackScreenProps } from '@react-navigation/native-stack';
-import { COLORS, SPACING, SHADOWS } from '../config/theme';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { COLORS, SHADOWS } from '../config/theme';
 import { RootStackParamList } from '../types';
 import axios from 'axios';
-import APIService from '../services/apiService';
 
-type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
+type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
 const BINANCE_API = 'https://data-api.binance.vision';
 
 // Our AI-supported coins
-const AI_COINS = ['BTC', 'ETH', 'SOL', 'DOGE', 'AVAX'];
+const AI_COINS = ['BTC', 'ETH', 'SOL', 'DOGE', 'AVAX', 'XRP', 'LINK', 'ADA', 'NEAR', 'DOT', 'FIL'];
 
 const COIN_IMAGES: Record<string, string> = {
   BTC: 'https://assets.coingecko.com/coins/images/1/small/bitcoin.png',
@@ -40,6 +41,11 @@ const COIN_IMAGES: Record<string, string> = {
   SUI: 'https://assets.coingecko.com/coins/images/26375/small/sui_asset.jpeg',
 };
 
+const CRYPTO_NAMES: Record<string, string> = {
+  BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', DOGE: 'dogecoin', AVAX: 'avalanche',
+  XRP: 'xrp', LINK: 'chainlink', ADA: 'cardano', NEAR: 'near',
+};
+
 // Top traded pairs on Binance
 const TOP_PAIRS = [
   'BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'XRPUSDT',
@@ -60,9 +66,30 @@ interface CryptoTicker {
   hasAI: boolean;
 }
 
-const HomeScreen: React.FC<Props> = ({ navigation }) => {
+// Separate search bar component to prevent keyboard dismiss on FlatList re-render
+const SearchBar = React.memo(({ value, onChangeText }: { value: string; onChangeText: (t: string) => void }) => (
+  <View style={st.searchBar}>
+    <Text style={st.searchIcon}>🔍</Text>
+    <TextInput
+      style={st.searchInput}
+      placeholder="Search coin..."
+      placeholderTextColor={COLORS.textDark}
+      value={value}
+      onChangeText={onChangeText}
+      autoCorrect={false}
+      autoCapitalize="characters"
+    />
+    {value.length > 0 && (
+      <TouchableOpacity onPress={() => onChangeText('')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+        <Text style={st.clearIcon}>✕</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+));
+
+const HomeScreen: React.FC = () => {
+  const navigation = useNavigation<NavProp>();
   const [tickers, setTickers] = useState<CryptoTicker[]>([]);
-  const [filtered, setFiltered] = useState<CryptoTicker[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
@@ -101,7 +128,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
   useEffect(() => { fetchTickers(); }, []);
 
-  useEffect(() => {
+  const filtered = useMemo(() => {
     let f = [...tickers];
     if (search) {
       f = f.filter(t => t.coin.toLowerCase().includes(search.toLowerCase()));
@@ -110,10 +137,18 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     else if (sortBy === 'losers') f.sort((a, b) => a.changePct - b.changePct);
     else if (sortBy === 'volume') f.sort((a, b) => b.volume - a.volume);
     else if (sortBy === 'ai') f = f.filter(t => t.hasAI);
-    setFiltered(f);
+    return f;
   }, [search, sortBy, tickers]);
 
   const onRefresh = useCallback(() => { setRefreshing(true); fetchTickers(); }, []);
+
+  const handleCoinPress = useCallback((item: CryptoTicker) => {
+    navigation.navigate('Analysis', {
+      coin: item.coin,
+      price: item.price,
+      changePct: item.changePct,
+    });
+  }, [navigation]);
 
   const formatPrice = (p: number) => {
     if (p >= 1000) return `$${p.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
@@ -127,35 +162,13 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
     return `$${(v / 1e3).toFixed(0)}K`;
   };
 
-  const handleAIPress = async (coin: string) => {
-    const cryptoMap: Record<string, string> = {
-      BTC: 'bitcoin', ETH: 'ethereum', SOL: 'solana', DOGE: 'dogecoin', AVAX: 'avalanche',
-    };
-    const cryptoId = cryptoMap[coin];
-    if (!cryptoId) return;
-
-    try {
-      const prediction = await APIService.getPrediction(cryptoId);
-      navigation.navigate('Detail', { crypto: prediction });
-    } catch (e) {
-      // Navigate with minimal data if API fails
-      navigation.navigate('Detail', {
-        crypto: {
-          crypto: cryptoId, symbol: `${coin}USDT`, name: coin,
-          signal: 'HOLD', confidence: 0, current_price: null,
-          risk_management: null, timestamp: new Date().toISOString(),
-        } as any,
-      });
-    }
-  };
-
-  const renderTicker = ({ item, index }: { item: CryptoTicker; index: number }) => {
+  const renderTicker = useCallback(({ item, index }: { item: CryptoTicker; index: number }) => {
     const isPositive = item.changePct >= 0;
     const changeColor = isPositive ? COLORS.success : COLORS.danger;
     const img = COIN_IMAGES[item.coin];
 
-    return (
-      <View style={cs.card}>
+    const cardContent = (
+      <>
         {/* Rank + Coin info */}
         <View style={cs.leftSection}>
           <Text style={cs.rank}>{index + 1}</Text>
@@ -184,32 +197,36 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Volume + AI Button */}
+        {/* Volume */}
         <View style={cs.rightSection}>
           <Text style={cs.volume}>{formatVolume(item.volume)}</Text>
-          {item.hasAI ? (
-            <TouchableOpacity
-              style={cs.aiBtn}
-              onPress={() => handleAIPress(item.coin)}
-              activeOpacity={0.7}
-            >
-              <Text style={cs.aiBtnText}>🧠 IA</Text>
-            </TouchableOpacity>
-          ) : (
-            <View style={cs.aiBtnDisabled}>
-              <Text style={cs.aiBtnTextDisabled}>🧠 IA</Text>
-            </View>
+          {item.hasAI && (
+            <Icon name="chart-box-outline" size={16} color={COLORS.primary} />
           )}
         </View>
+      </>
+    );
+
+    if (item.hasAI) {
+      return (
+        <TouchableOpacity style={cs.card} onPress={() => handleCoinPress(item)} activeOpacity={0.7}>
+          {cardContent}
+        </TouchableOpacity>
+      );
+    }
+
+    return (
+      <View style={cs.card}>
+        {cardContent}
       </View>
     );
-  };
+  }, [handleCoinPress]);
 
-  const renderHeader = () => (
+  const renderHeader = useCallback(() => (
     <View style={st.header}>
       <View style={st.titleRow}>
         <View>
-          <Text style={st.title}>CryptoAdviser</Text>
+          <Text style={st.title}>CryptoXHunter</Text>
           <Text style={st.subtitle}>Market Overview</Text>
         </View>
         <View style={st.aiBadge}>
@@ -218,17 +235,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         </View>
       </View>
 
-      {/* Search */}
-      <View style={st.searchBar}>
-        <Text style={st.searchIcon}>🔍</Text>
-        <TextInput
-          style={st.searchInput}
-          placeholder="Search coin..."
-          placeholderTextColor={COLORS.textDark}
-          value={search}
-          onChangeText={setSearch}
-        />
-      </View>
+      {/* Search — separate component to avoid keyboard dismiss */}
+      <SearchBar value={search} onChangeText={setSearch} />
 
       {/* Sort/Filter chips */}
       <View style={st.sortRow}>
@@ -240,7 +248,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
           ['ai', '🧠 AI Only'],
         ] as const).map(([key, label]) => {
           const active = sortBy === key;
-          const color = key === 'gainers' ? COLORS.success : key === 'losers' ? COLORS.danger : key === 'ai' ? COLORS.primary : COLORS.primary;
+          const color = key === 'gainers' ? COLORS.success : key === 'losers' ? COLORS.danger : COLORS.primary;
           return (
             <TouchableOpacity key={key} style={[st.sortChip, active && { borderColor: color, backgroundColor: `${color}10` }]}
               onPress={() => setSortBy(key as any)}>
@@ -257,7 +265,7 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         <Text style={[st.colText, { flex: 0.8, textAlign: 'right' }]}>Vol / IA</Text>
       </View>
     </View>
-  );
+  ), [search, sortBy]);
 
   if (loading) {
     return (
@@ -280,6 +288,8 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
         contentContainerStyle={st.list}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="none"
       />
     </View>
   );
@@ -303,12 +313,11 @@ const st = StyleSheet.create({
   searchBar: { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 10, borderWidth: 1, borderColor: COLORS.border, marginBottom: 12 },
   searchIcon: { fontSize: 16, marginRight: 8 },
   searchInput: { flex: 1, fontSize: 14, color: COLORS.text, fontWeight: '500', padding: 0 },
+  clearIcon: { fontSize: 14, color: COLORS.textDark, paddingLeft: 8 },
 
   sortRow: { flexDirection: 'row', gap: 6, marginBottom: 12, flexWrap: 'wrap' },
   sortChip: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.03)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  sortChipActive: { borderColor: COLORS.primary, backgroundColor: `${COLORS.primary}10` },
   sortText: { fontSize: 12, fontWeight: '700', color: COLORS.textSecondary },
-  sortTextActive: { color: COLORS.primary },
 
   colHeaders: { flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 4, marginBottom: 4 },
   colText: { fontSize: 10, color: COLORS.textDark, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase' },
@@ -322,7 +331,7 @@ const cs = StyleSheet.create({
   rank: { fontSize: 11, color: COLORS.textDark, fontWeight: '700', width: 18, textAlign: 'center' },
   coinInfo: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   coinImg: { width: 30, height: 30, borderRadius: 15 },
-  coinPlaceholder: { width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.cardSecondary, justifyContent: 'center', alignItems: 'center' },
+  coinPlaceholder: { width: 30, height: 30, borderRadius: 15, backgroundColor: 'rgba(255,255,255,0.05)', justifyContent: 'center', alignItems: 'center' },
   coinLetter: { fontSize: 14, fontWeight: '800', color: COLORS.textSecondary },
   coinName: { fontSize: 14, fontWeight: '800', color: COLORS.text, letterSpacing: 0.3 },
   coinPair: { fontSize: 9, color: COLORS.textDark, fontWeight: '600' },
@@ -334,10 +343,6 @@ const cs = StyleSheet.create({
 
   rightSection: { flex: 0.8, alignItems: 'flex-end', gap: 4 },
   volume: { fontSize: 10, color: COLORS.textSecondary, fontWeight: '600' },
-  aiBtn: { backgroundColor: `${COLORS.primary}15`, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: `${COLORS.primary}40` },
-  aiBtnText: { fontSize: 10, fontWeight: '800', color: COLORS.primary },
-  aiBtnDisabled: { backgroundColor: 'rgba(255,255,255,0.03)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)' },
-  aiBtnTextDisabled: { fontSize: 10, fontWeight: '700', color: COLORS.textDark },
 });
 
 export default HomeScreen;

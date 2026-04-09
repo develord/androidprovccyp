@@ -125,8 +125,8 @@ const SimulationScreen: React.FC<Props> = ({ navigation }) => {
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
-      <Text style={styles.headerTitle}>Simulation IA</Text>
-      <Text style={styles.headerSubtitle}>Backtest du modèle V11</Text>
+      <Text style={styles.headerTitle}>AI Simulation</Text>
+      <Text style={styles.headerSubtitle}>Historical Performance Test</Text>
 
       {results && (
         <View style={styles.headerInfo}>

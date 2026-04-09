@@ -25,7 +25,7 @@ type CoinFilter = string | null;
 
 const COIN_SHORT: Record<string, string> = {
   bitcoin: 'BTC', ethereum: 'ETH', solana: 'SOL', dogecoin: 'DOGE', avalanche: 'AVAX',
-  xrp: 'XRP', chainlink: 'LINK', cardano: 'ADA', near: 'NEAR', market: 'ALL',
+  xrp: 'XRP', chainlink: 'LINK', cardano: 'ADA', near: 'NEAR', polkadot: 'DOT', filecoin: 'FIL', market: 'ALL',
 };
 
 const COIN_IMAGES: Record<string, string> = {
@@ -38,6 +38,8 @@ const COIN_IMAGES: Record<string, string> = {
   near: 'https://assets.coingecko.com/coins/images/10365/small/near.jpg',
   avalanche: 'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png',
   dogecoin: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
+  polkadot: 'https://assets.coingecko.com/coins/images/12171/small/polkadot.png',
+  filecoin: 'https://assets.coingecko.com/coins/images/12817/small/filecoin.png',
 };
 
 const SENTIMENT_CONFIG = {

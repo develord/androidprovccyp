@@ -17,6 +17,8 @@
         <domain includeSubdomains="true">data-api.binance.vision</domain>
         <domain includeSubdomains="true">binance.com</domain>
         <domain includeSubdomains="true">stream.binance.com</domain>
+        <domain includeSubdomains="true">accounts.binance.com</domain>
+        <domain includeSubdomains="true">oauth2.googleapis.com</domain>
     </domain-config>
 
     <!-- Allow localhost for development -->
@@ -24,5 +26,6 @@
         <domain includeSubdomains="true">localhost</domain>
         <domain includeSubdomains="true">127.0.0.1</domain>
         <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">204.168.236.23</domain>
     </domain-config>
 </network-security-config>

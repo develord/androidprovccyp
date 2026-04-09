@@ -1,4 +1,7 @@
 {
   "name": "CryptoAdviserApp",
-  "displayName": "CryptoAdviserApp"
+  "displayName": "CryptoXHunter",
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-9009231639779757~2399413760"
+  }
 }

@@ -18,6 +18,12 @@ const COIN_IMAGES: Record<string, string> = {
   SOL: 'https://assets.coingecko.com/coins/images/4128/small/solana.png',
   DOGE: 'https://assets.coingecko.com/coins/images/5/small/dogecoin.png',
   AVAX: 'https://assets.coingecko.com/coins/images/12559/small/Avalanche_Circle_RedWhite_Trans.png',
+  XRP: 'https://assets.coingecko.com/coins/images/44/small/xrp-symbol-white-128.png',
+  LINK: 'https://assets.coingecko.com/coins/images/877/small/chainlink-new-logo.png',
+  ADA: 'https://assets.coingecko.com/coins/images/975/small/cardano.png',
+  NEAR: 'https://assets.coingecko.com/coins/images/10365/small/near.jpg',
+  DOT: 'https://assets.coingecko.com/coins/images/12171/small/polkadot.png',
+  FIL: 'https://assets.coingecko.com/coins/images/12817/small/filecoin.png',
 };
 
 interface Position {
@@ -29,8 +35,10 @@ interface Position {
 }
 
 interface Trade {
-  symbol: string; coin: string; side: string; price: number;
-  qty: number; realizedPnl: number; time: string;
+  coin: string; direction: 'LONG' | 'SHORT'; result: 'WIN' | 'LOSS';
+  entryPrice: number; exitPrice: number; quantity: number;
+  realizedPnl: number; pnlPercent: number; sizeUsd: number; pnlUsd: number;
+  entryTime: number; exitTime: number; durationHours: number;
 }
 
 const LiveTradingScreen: React.FC = () => {
@@ -53,10 +61,10 @@ const LiveTradingScreen: React.FC = () => {
     try {
       const ts = Date.now();
 
-      // Balance
+      // Balance — use walletBalance (total) not availableBalance (after margin deduction)
       const balRes = await axios.get(`${DEMO_API}/fapi/v2/balance`, { params: sign({ timestamp: ts, recvWindow: 10000 }), headers });
       const usdtBal = balRes.data.find((b: any) => b.asset === 'USDT');
-      setBalance(parseFloat(usdtBal?.availableBalance || '0'));
+      setBalance(parseFloat(usdtBal?.balance || usdtBal?.availableBalance || '0'));
 
       // Positions
       const posRes = await axios.get(`${DEMO_API}/fapi/v2/positionRisk`, { params: sign({ timestamp: Date.now(), recvWindow: 10000 }), headers });
@@ -95,12 +103,25 @@ const LiveTradingScreen: React.FC = () => {
         // TP from limit orders
         const tpSide = side === 'LONG' ? 'SELL' : 'BUY';
         const tp = tpOrders.find((o: any) => o.symbol === pos.symbol && o.side === tpSide && o.type === 'LIMIT');
-        const tpPrice = tp ? parseFloat(tp.price) : null;
+        let tpPrice: number | null = tp ? parseFloat(tp.price) : null;
+        // Fallback: estimate TP from entry price (3% for LONG, 4% for SHORT)
+        if (!tpPrice && entry > 0) {
+          tpPrice = side === 'LONG' ? entry * 1.03 : entry * 0.96;
+        }
 
-        // SL from algo orders
+        // SL from algo orders, fallback to STOP_MARKET open orders
         const slSide = side === 'LONG' ? 'SELL' : 'BUY';
         const sl = algoOrders.filter((o: any) => o.symbol === pos.symbol && o.side === slSide && o.algoStatus === 'NEW');
-        const slPrice = sl.length > 0 ? parseFloat(sl[sl.length - 1].triggerPrice) : null;
+        let slPrice: number | null = sl.length > 0 ? parseFloat(sl[sl.length - 1].triggerPrice) : null;
+        // Fallback: check STOP_MARKET in regular open orders
+        if (!slPrice) {
+          const slOrd = tpOrders.find((o: any) => o.symbol === pos.symbol && o.side === slSide && o.type === 'STOP_MARKET');
+          slPrice = slOrd ? parseFloat(slOrd.stopPrice) : null;
+        }
+        // Last fallback: estimate SL from entry price (2% for SHORT, 1.5% for LONG)
+        if (!slPrice && entry > 0) {
+          slPrice = side === 'LONG' ? entry * 0.985 : entry * 1.02;
+        }
 
         // Progress
         let progress = 0;
@@ -126,17 +147,76 @@ const LiveTradingScreen: React.FC = () => {
       setPositions(openPos);
       setTotalPnl(pnlSum);
 
-      // Trade history
+      // Trade history — aggregate fills into complete trades
       try {
         const histRes = await axios.get(`${DEMO_API}/fapi/v1/userTrades`, {
-          params: sign({ timestamp: Date.now(), recvWindow: 10000, limit: 50 }), headers,
+          params: sign({ timestamp: Date.now(), recvWindow: 10000, limit: 200 }), headers,
         });
-        setHistory(histRes.data.slice(-20).reverse().map((t: any) => ({
-          symbol: t.symbol, coin: t.symbol.replace('USDT', ''),
-          side: t.side, price: parseFloat(t.price), qty: parseFloat(t.qty),
-          realizedPnl: parseFloat(t.realizedPnl),
-          time: new Date(t.time).toLocaleString(),
-        })));
+        const raw = histRes.data.sort((a: any, b: any) => a.time - b.time);
+
+        // Group fills into rounds: each "round" is an entry (opens position) + exit (closes it)
+        const rounds: Trade[] = [];
+        const tracker: Record<string, { qty: number; side: string; costSum: number; entryTime: number; fills: number }> = {};
+
+        for (const t of raw) {
+          const sym = t.symbol;
+          const coin = sym.replace('USDT', '');
+          const side = t.side; // BUY or SELL
+          const qty = parseFloat(t.qty);
+          const price = parseFloat(t.price);
+          const pnl = parseFloat(t.realizedPnl);
+          const ts = t.time;
+
+          if (!tracker[sym]) {
+            // First fill for this symbol — opening
+            tracker[sym] = { qty, side, costSum: price * qty, entryTime: ts, fills: 1, closedQty: 0, closedCost: 0, totalPnl: 0 };
+          } else {
+            const tk = tracker[sym];
+            if (side === tk.side) {
+              // Same side = adding to position
+              tk.costSum += price * qty;
+              tk.qty += qty;
+              tk.fills++;
+            } else {
+              // Opposite side = closing (accumulate all close fills)
+              tk.closedQty += qty;
+              tk.closedCost += price * qty;
+              tk.totalPnl += pnl;
+              tk.qty -= qty;
+
+              if (tk.qty <= 0.0001) {
+                // Position fully closed — record complete round
+                const entryAvg = tk.costSum / (tk.closedQty + tk.qty);
+                const exitAvg = tk.closedCost / tk.closedQty;
+                const direction: 'LONG' | 'SHORT' = tk.side === 'BUY' ? 'LONG' : 'SHORT';
+                const pnlPct = direction === 'LONG'
+                  ? ((exitAvg / entryAvg) - 1) * 100
+                  : ((entryAvg / exitAvg) - 1) * 100;
+                const sizeUsd = entryAvg * tk.closedQty;
+                const pnlUsd = tk.totalPnl;
+                const durH = (ts - tk.entryTime) / 3600000;
+
+                rounds.push({
+                  coin, direction,
+                  result: pnlPct >= 0 ? 'WIN' : 'LOSS',
+                  entryPrice: entryAvg, exitPrice: exitAvg,
+                  quantity: tk.closedQty,
+                  realizedPnl: tk.totalPnl,
+                  pnlPercent: pnlPct,
+                  sizeUsd, pnlUsd,
+                  entryTime: tk.entryTime, exitTime: ts,
+                  durationHours: durH,
+                });
+                delete tracker[sym];
+              }
+            }
+          }
+        }
+
+        // Filter: only show trades from 05/04 onwards
+        const cutoff = new Date('2026-04-05T00:00:00').getTime();
+        const filtered = rounds.filter((r: Trade) => r.exitTime >= cutoff);
+        setHistory(filtered.reverse().slice(0, 50));
       } catch (e) {}
     } catch (e: any) {
       console.error('Fetch error:', e.message);
@@ -236,25 +316,65 @@ const LiveTradingScreen: React.FC = () => {
   };
 
   const renderTrade = ({ item }: { item: Trade }) => {
-    const isProfit = item.realizedPnl >= 0;
+    const isWin = item.result === 'WIN';
+    const dirColor = item.direction === 'LONG' ? COLORS.success : COLORS.danger;
+    const resultColor = isWin ? COLORS.success : COLORS.danger;
     const img = COIN_IMAGES[item.coin];
+    const durStr = item.durationHours < 1
+      ? `${Math.round(item.durationHours * 60)}m`
+      : item.durationHours < 24
+        ? `${item.durationHours.toFixed(1)}h`
+        : `${(item.durationHours / 24).toFixed(1)}d`;
+    const dateStr = new Date(item.exitTime).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' });
+    const timeStr = new Date(item.exitTime).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const priceFmt = (p: number) => p >= 100 ? p.toFixed(2) : p >= 1 ? p.toFixed(4) : p.toFixed(6);
 
     return (
-      <View style={hs.row}>
-        <View style={hs.left}>
-          {img && <Image source={{ uri: img }} style={hs.img} />}
-          <View>
-            <Text style={hs.coin}>{item.coin}</Text>
-            <Text style={[hs.side, { color: item.side === 'BUY' ? COLORS.success : COLORS.danger }]}>{item.side}</Text>
+      <View style={[hs.card, { borderLeftColor: resultColor, borderLeftWidth: 3 }]}>
+        <View style={hs.topRow}>
+          <View style={hs.coinRow}>
+            {img && <Image source={{ uri: img }} style={hs.img} />}
+            <View>
+              <Text style={hs.coin}>{item.coin}</Text>
+              <View style={[hs.dirBadge, { backgroundColor: `${dirColor}15`, borderColor: `${dirColor}40` }]}>
+                <Text style={[hs.dirText, { color: dirColor }]}>{item.direction}</Text>
+              </View>
+            </View>
+          </View>
+          <View style={hs.resultCol}>
+            <View style={[hs.resultBadge, { backgroundColor: `${resultColor}18` }]}>
+              <Text style={[hs.resultText, { color: resultColor }]}>{isWin ? 'WIN' : 'LOSS'}</Text>
+            </View>
+            <Text style={[hs.pnlPct, { color: resultColor }]}>
+              {item.pnlPercent >= 0 ? '+' : ''}{item.pnlPercent.toFixed(2)}%
+            </Text>
+            <Text style={[hs.pnlUsd, { color: resultColor }]}>
+              {item.pnlUsd >= 0 ? '+' : ''}${item.pnlUsd.toFixed(2)}
+            </Text>
           </View>
         </View>
-        <View style={hs.center}>
-          <Text style={hs.price}>${item.price.toFixed(4)}</Text>
-          <Text style={hs.time}>{item.time}</Text>
+        <View style={hs.detailGrid}>
+          <View style={hs.detailItem}>
+            <Text style={hs.detailLabel}>Entry</Text>
+            <Text style={hs.detailValue}>${priceFmt(item.entryPrice)}</Text>
+          </View>
+          <View style={hs.detailItem}>
+            <Text style={hs.detailLabel}>Exit</Text>
+            <Text style={[hs.detailValue, { color: resultColor }]}>${priceFmt(item.exitPrice)}</Text>
+          </View>
+          <View style={hs.detailItem}>
+            <Text style={hs.detailLabel}>Size</Text>
+            <Text style={hs.detailValue}>${item.sizeUsd.toFixed(2)}</Text>
+          </View>
+          <View style={hs.detailItem}>
+            <Text style={hs.detailLabel}>Duration</Text>
+            <Text style={hs.detailValue}>{durStr}</Text>
+          </View>
+          <View style={hs.detailItem}>
+            <Text style={hs.detailLabel}>Date</Text>
+            <Text style={hs.detailValue}>{dateStr} {timeStr}</Text>
+          </View>
         </View>
-        <Text style={[hs.pnl, { color: isProfit ? COLORS.success : COLORS.danger }]}>
-          ${item.realizedPnl.toFixed(2)}
-        </Text>
       </View>
     );
   };
@@ -288,7 +408,7 @@ const LiveTradingScreen: React.FC = () => {
         <View style={st.portGrid}>
           <View style={st.portItem}>
             <Text style={st.portItemLabel}>Balance</Text>
-            <Text style={st.portItemValue}>${balance.toFixed(0)}</Text>
+            <Text style={st.portItemValue}>${balance.toFixed(2)}</Text>
           </View>
           <View style={[st.portItem, { borderLeftWidth: 1, borderLeftColor: COLORS.border }]}>
             <Text style={st.portItemLabel}>PnL</Text>
@@ -412,17 +532,24 @@ const ps = StyleSheet.create({
   dataValue: { fontSize: 13, color: COLORS.text, fontWeight: '700' },
 });
 
-// History styles
+// History card styles
 const hs = StyleSheet.create({
-  row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border },
-  left: { flexDirection: 'row', alignItems: 'center', gap: 8, width: 90 },
-  img: { width: 24, height: 24, borderRadius: 12 },
-  coin: { fontSize: 14, fontWeight: '800', color: COLORS.text },
-  side: { fontSize: 10, fontWeight: '800' },
-  center: { flex: 1, alignItems: 'center' },
-  price: { fontSize: 13, color: COLORS.text, fontWeight: '600' },
-  time: { fontSize: 10, color: COLORS.textSecondary, marginTop: 2 },
-  pnl: { fontSize: 14, fontWeight: '800', width: 70, textAlign: 'right' },
+  card: { backgroundColor: COLORS.card, borderRadius: 16, borderWidth: 1, borderColor: COLORS.border, marginBottom: 10, overflow: 'hidden', ...SHADOWS.small },
+  topRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 14, paddingBottom: 10 },
+  coinRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  img: { width: 32, height: 32, borderRadius: 16 },
+  coin: { fontSize: 16, fontWeight: '800', color: COLORS.text },
+  dirBadge: { paddingHorizontal: 7, paddingVertical: 2, borderRadius: 5, borderWidth: 1, marginTop: 2, alignSelf: 'flex-start' },
+  dirText: { fontSize: 9, fontWeight: '800', letterSpacing: 0.6 },
+  resultCol: { alignItems: 'flex-end' },
+  resultBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 8, marginBottom: 3 },
+  resultText: { fontSize: 11, fontWeight: '900', letterSpacing: 0.8 },
+  pnlPct: { fontSize: 18, fontWeight: '900' },
+  pnlUsd: { fontSize: 12, fontWeight: '700', marginTop: 1 },
+  detailGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 14, paddingBottom: 12, borderTopWidth: 1, borderTopColor: COLORS.border, paddingTop: 10 },
+  detailItem: { width: '50%', paddingVertical: 3 },
+  detailLabel: { fontSize: 10, color: COLORS.textSecondary, fontWeight: '600', letterSpacing: 0.4, marginBottom: 1 },
+  detailValue: { fontSize: 12, color: COLORS.text, fontWeight: '700' },
 });
 
 export default LiveTradingScreen;

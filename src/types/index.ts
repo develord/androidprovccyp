@@ -140,6 +140,7 @@ export type RootStackParamList = {
   Login: undefined;
   HomeTabs: NavigatorScreenParams<TabParamList> | undefined;
   Detail: { crypto: CryptoPrediction };
+  Analysis: { coin: string; price: number; changePct: number };
   TradeDetail: { trade: VirtualTrade };
   Simulation: undefined;
 };

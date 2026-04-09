@@ -1,7 +1,8 @@
-// Background Tasks for Auto Trading
+// Background Tasks for Auto Trading + Signal Notifications
 import { AppRegistry } from 'react-native';
 import autoTradingService from './src/services/autoTradingService';
 import tradeMonitoringService from './src/services/tradeMonitoringService';
+import signalNotificationService from './src/services/signalNotificationService';
 
 // HeadlessJS Task: Check for trading opportunities every 15 minutes
 const AutoTradingCheckTask = async (taskData) => {
@@ -39,8 +40,26 @@ const TradeMonitoringTask = async (taskData) => {
   }
 };
 
+// HeadlessJS Task: Check signals and send push notifications for BUY/SELL
+const SignalCheckTask = async (taskData) => {
+  console.log('[HeadlessJS] SignalCheck task started');
+
+  try {
+    // Trigger a one-time signal check (reuses the service logic)
+    signalNotificationService.start();
+    // Let it run one cycle then stop
+    setTimeout(() => {
+      signalNotificationService.stop();
+      console.log('[HeadlessJS] SignalCheck completed');
+    }, 30000); // 30s to complete API calls
+  } catch (error) {
+    console.error('[HeadlessJS] SignalCheck error:', error);
+  }
+};
+
 // Register HeadlessJS tasks
 AppRegistry.registerHeadlessTask('AutoTradingCheck', () => AutoTradingCheckTask);
 AppRegistry.registerHeadlessTask('TradeMonitoring', () => TradeMonitoringTask);
+AppRegistry.registerHeadlessTask('SignalCheck', () => SignalCheckTask);
 
-export { AutoTradingCheckTask, TradeMonitoringTask };
+export { AutoTradingCheckTask, TradeMonitoringTask, SignalCheckTask };

@@ -1,9 +1,9 @@
-// API Service - CNN Prediction API
+// API Service - Prediction API
 import axios, { AxiosInstance } from 'axios';
 import { API_CONFIG } from '../config/api';
 import AuthService from './authService';
 
-// Types for CNN API responses
+// Types for API responses
 export interface CryptoPrediction {
   crypto: string;
   symbol: string;

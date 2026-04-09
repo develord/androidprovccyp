@@ -1,7 +1,7 @@
 // API Configuration
 export const API_CONFIG = {
-  // Production API on Hetzner VPS (CNN LONG+SHORT models)
-  BASE_URL: 'http://204.168.236.23:8080',
+  // Production API on Hetzner VPS with HTTPS + DuckDNS domain on port 443
+  BASE_URL: 'https://crypto-trading-bot.duckdns.org',
 
   // Static API key for app identification (matches server APP_API_KEY)
   API_KEY: '098e53ee1afd8cbb5079c7ed6321f7f3',

@@ -18,6 +18,7 @@ import LiveTradingScreen from '../screens/LiveTradingScreen';
 import TradeDetailScreen from '../screens/TradeDetailScreen';
 import SimulationScreen from '../screens/SimulationScreen';
 import NewsScreen from '../screens/NewsScreen';
+import AnalysisScreen from '../screens/AnalysisScreen';
 import DatabaseService from '../services/databaseService';
 import AnalyticsService from '../services/analyticsService';
 
@@ -147,6 +148,7 @@ const AppNavigator: React.FC = () => {
           <>
             <Stack.Screen name="HomeTabs" component={BottomTabs} />
             <Stack.Screen name="Detail" component={DetailScreen} />
+            <Stack.Screen name="Analysis" component={AnalysisScreen} />
             <Stack.Screen name="TradeDetail" component={TradeDetailScreen} />
             <Stack.Screen name="Simulation" component={SimulationScreen} />
           </>
