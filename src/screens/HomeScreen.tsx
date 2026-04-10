@@ -10,6 +10,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { COLORS, SHADOWS } from '../config/theme';
 import { RootStackParamList } from '../types';
 import useAppStore from '../store/useAppStore';
+import { TickerRowSkeleton } from '../components/SkeletonLoader';
 import axios from 'axios';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -273,10 +274,11 @@ const HomeScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <View style={st.center}>
+      <View style={st.container}>
         <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={st.loadText}>Loading market data...</Text>
+        {Array.from({ length: 10 }).map((_, i) => (
+          <TickerRowSkeleton key={i} />
+        ))}
       </View>
     );
   }

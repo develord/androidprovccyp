@@ -1,6 +1,7 @@
 // App Navigator — Premium Navigation with Material Icons
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Platform, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer, NavigationState } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -19,6 +20,7 @@ import TradeDetailScreen from '../screens/TradeDetailScreen';
 import SimulationScreen from '../screens/SimulationScreen';
 import NewsScreen from '../screens/NewsScreen';
 import AnalysisScreen from '../screens/AnalysisScreen';
+import OnboardingScreen from '../screens/OnboardingScreen';
 import DatabaseService from '../services/databaseService';
 import AnalyticsService from '../services/analyticsService';
 
@@ -100,13 +102,16 @@ const SplashScreen: React.FC = () => (
 const AppNavigator: React.FC = () => {
   const { i18n } = useTranslation();
   const { isLoading, isAuthenticated } = useAuth();
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const loadLanguage = async () => {
+    const init = async () => {
       const saved = await DatabaseService.getLanguage();
       i18n.changeLanguage(saved);
+      const onboardingDone = await AsyncStorage.getItem('@onboarding_complete');
+      setShowOnboarding(!onboardingDone);
     };
-    loadLanguage();
+    init();
   }, [i18n]);
 
   const onStateChange = (state: NavigationState | undefined) => {
@@ -140,17 +145,21 @@ const AppNavigator: React.FC = () => {
           contentStyle: { backgroundColor: COLORS.background },
         }}
       >
-        {isLoading ? (
+        {isLoading || showOnboarding === null ? (
           <Stack.Screen name="Splash" component={SplashScreen} options={{ animationTypeForReplace: 'pop' }} />
+        ) : showOnboarding ? (
+          <Stack.Screen name="Onboarding" options={{ animationTypeForReplace: 'pop' }}>
+            {() => <OnboardingScreen onComplete={() => setShowOnboarding(false)} />}
+          </Stack.Screen>
         ) : !isAuthenticated ? (
           <Stack.Screen name="Login" component={LoginScreen} options={{ animationTypeForReplace: 'pop' }} />
         ) : (
           <>
             <Stack.Screen name="HomeTabs" component={BottomTabs} />
-            <Stack.Screen name="Detail" component={DetailScreen} />
-            <Stack.Screen name="Analysis" component={AnalysisScreen} />
-            <Stack.Screen name="TradeDetail" component={TradeDetailScreen} />
-            <Stack.Screen name="Simulation" component={SimulationScreen} />
+            <Stack.Screen name="Detail" component={DetailScreen} options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="Analysis" component={AnalysisScreen} options={{ animation: 'fade_from_bottom' }} />
+            <Stack.Screen name="TradeDetail" component={TradeDetailScreen} options={{ animation: 'slide_from_bottom' }} />
+            <Stack.Screen name="Simulation" component={SimulationScreen} options={{ animation: 'fade_from_bottom' }} />
           </>
         )}
       </Stack.Navigator>

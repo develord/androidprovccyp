@@ -1,15 +1,15 @@
 // NewsScreen — Crypto News Feed with Sentiment Classification
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, StyleSheet, FlatList, RefreshControl,
+  View, Text, StyleSheet, FlatList, RefreshControl, ScrollView,
   TouchableOpacity, StatusBar, SafeAreaView, Linking, Image,
-  ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SHADOWS } from '../config/theme';
 import APIService from '../services/apiService';
 import useAppStore from '../store/useAppStore';
+import { NewsCardSkeleton } from '../components/SkeletonLoader';
 
 interface NewsArticle {
   id: string;
@@ -204,10 +204,19 @@ const NewsScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={s.center}>
+      <SafeAreaView style={s.container}>
         <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-        <ActivityIndicator size="large" color={COLORS.primary} />
-        <Text style={s.loadText}>{t('newsLoading', 'Loading news...')}</Text>
+        <View style={s.header}>
+          <View>
+            <Text style={s.headerTitle}>{t('news', 'News')}</Text>
+            <Text style={s.headerSub}>{t('newsSubtitle', 'AI Sentiment Analysis')}</Text>
+          </View>
+        </View>
+        <ScrollView style={{ flex: 1, padding: 16 }}>
+          {[1, 2, 3, 4, 5].map(i => (
+            <NewsCardSkeleton key={i} />
+          ))}
+        </ScrollView>
       </SafeAreaView>
     );
   }

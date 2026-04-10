@@ -12,6 +12,7 @@ import { RootStackParamList } from '../types';
 import { useCredits } from '../context/CreditsContext';
 import APIService, { CryptoPrediction } from '../services/apiService';
 import useAppStore from '../store/useAppStore';
+import { SignalCardSkeleton } from '../components/SkeletonLoader';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -331,15 +332,11 @@ const SignalsScreen: React.FC = () => {
 
   if (loading) {
     return (
-      <SafeAreaView style={st.center}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: COLORS.background, paddingTop: 16 }}>
         <StatusBar barStyle="light-content" backgroundColor={COLORS.background} />
-        <View style={st.radarPulse}>
-          <View style={st.radarRing1} />
-          <View style={st.radarRing2} />
-          <View style={st.radarDot} />
-        </View>
-        <Text style={st.loadText}>Scanning markets...</Text>
-        <Text style={st.loadHint}>Analyzing all assets</Text>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <SignalCardSkeleton key={i} />
+        ))}
       </SafeAreaView>
     );
   }

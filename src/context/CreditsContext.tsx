@@ -93,17 +93,11 @@ export const CreditsProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const earned = await AdService.show();
     if (!earned) return false;
 
-    // Single attempt — no retry to avoid double-earn
-    try {
-      const data = await APIService.earnCredits('rewarded_video');
-      setBalance(data.balance);
-      await AsyncStorage.setItem(CREDITS_CACHE_KEY, String(data.balance));
-      return true;
-    } catch {
-      // If earn failed (cooldown etc.), sync balance from server
-      await fetchBalance();
-      return false;
-    }
+    // Credits are now added by AdMob SSV server callback.
+    // Wait briefly for SSV to process, then sync balance from server.
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    await fetchBalance();
+    return true;
   }, [fetchBalance]);
 
   const spendOnCrypto = useCallback(async (crypto: string): Promise<boolean> => {
