@@ -9,6 +9,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useTranslation } from 'react-i18next';
 import { COLORS, SHADOWS } from '../config/theme';
 import APIService from '../services/apiService';
+import useAppStore from '../store/useAppStore';
 
 interface NewsArticle {
   id: string;
@@ -50,9 +51,11 @@ const SENTIMENT_CONFIG = {
 
 const NewsScreen: React.FC = () => {
   const { t } = useTranslation();
-  const [articles, setArticles] = useState<NewsArticle[]>([]);
-  const [filtered, setFiltered] = useState<NewsArticle[]>([]);
-  const [loading, setLoading] = useState(true);
+  const storeArticles = useAppStore(s => s.articles);
+  const setStoreArticles = useAppStore(s => s.setArticles);
+  const [articles, setArticles] = useState<NewsArticle[]>(storeArticles);
+  const [filtered, setFiltered] = useState<NewsArticle[]>(storeArticles);
+  const [loading, setLoading] = useState(storeArticles.length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [sentimentFilter, setSentimentFilter] = useState<SentimentFilter>('ALL');
   const [coinFilter, setCoinFilter] = useState<CoinFilter>(null);
@@ -60,7 +63,9 @@ const NewsScreen: React.FC = () => {
   const fetchNews = async () => {
     try {
       const data = await APIService.getNews();
-      setArticles(data.articles || []);
+      const arts = data.articles || [];
+      setArticles(arts);
+      setStoreArticles(arts);
     } catch (e) {
       console.error('News fetch error:', e);
     } finally {

@@ -11,6 +11,7 @@ import { COLORS, SHADOWS } from '../config/theme';
 import { RootStackParamList } from '../types';
 import { useCredits } from '../context/CreditsContext';
 import APIService, { CryptoPrediction } from '../services/apiService';
+import useAppStore from '../store/useAppStore';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
 
@@ -42,9 +43,11 @@ type DirFilter = 'ALL' | 'LONG' | 'SHORT' | 'HOLD';
 const SignalsScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const { balance, isCoinUnlocked, spendOnCrypto, watchAdAndEarn, resetUnlocks, adReady } = useCredits();
-  const [signals, setSignals] = useState<CryptoPrediction[]>([]);
-  const [filtered, setFiltered] = useState<CryptoPrediction[]>([]);
-  const [loading, setLoading] = useState(true);
+  const storeSignals = useAppStore(s => s.signals);
+  const setStoreSignals = useAppStore(s => s.setSignals);
+  const [signals, setSignals] = useState<CryptoPrediction[]>(storeSignals);
+  const [filtered, setFiltered] = useState<CryptoPrediction[]>(storeSignals);
+  const [loading, setLoading] = useState(storeSignals.length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [dirFilter, setDirFilter] = useState<DirFilter>('ALL');
   const [coinFilter, setCoinFilter] = useState<string | null>(null);
@@ -76,6 +79,7 @@ const SignalsScreen: React.FC = () => {
         return (b.confidence || 0) - (a.confidence || 0);
       });
       setSignals(valid);
+      setStoreSignals(valid);
     } catch (e) {
       console.error('Signals fetch error:', e);
     } finally {

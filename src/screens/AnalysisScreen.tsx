@@ -7,6 +7,7 @@ import { COLORS, SHADOWS } from '../config/theme';
 import { RootStackParamList } from '../types';
 import TechnicalAnalysis from '../components/TechnicalAnalysis';
 import apiService from '../services/apiService';
+import useAppStore from '../store/useAppStore';
 
 type AnalysisRoute = RouteProp<RootStackParamList, 'Analysis'>;
 
@@ -38,17 +39,22 @@ const AnalysisScreen: React.FC = () => {
   const route = useRoute<AnalysisRoute>();
   const navigation = useNavigation();
   const { coin, price, changePct } = route.params;
+  const getStoreAnalysis = useAppStore(s => s.getAnalysis);
+  const setStoreAnalysis = useAppStore(s => s.setAnalysis);
 
-  const [analysis, setAnalysis] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const cryptoId = CRYPTO_IDS[coin];
+  const cachedAnalysis = cryptoId ? getStoreAnalysis(cryptoId) : null;
+
+  const [analysis, setAnalysis] = useState<any>(cachedAnalysis);
+  const [loading, setLoading] = useState(!cachedAnalysis);
 
   useEffect(() => {
     const fetchAnalysis = async () => {
       try {
-        const cryptoId = CRYPTO_IDS[coin];
         if (cryptoId) {
           const data = await apiService.getTechnicalAnalysis(cryptoId);
           setAnalysis(data);
+          setStoreAnalysis(cryptoId, data);
         }
       } catch (e) {
         console.error('Analysis fetch error:', e);

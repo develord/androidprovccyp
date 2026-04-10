@@ -9,6 +9,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { COLORS, SHADOWS } from '../config/theme';
 import { RootStackParamList } from '../types';
+import useAppStore from '../store/useAppStore';
 import axios from 'axios';
 
 type NavProp = NativeStackNavigationProp<RootStackParamList>;
@@ -89,8 +90,10 @@ const SearchBar = React.memo(({ value, onChangeText }: { value: string; onChange
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
-  const [tickers, setTickers] = useState<CryptoTicker[]>([]);
-  const [loading, setLoading] = useState(true);
+  const storeTickers = useAppStore(s => s.tickers);
+  const setStoreTickers = useAppStore(s => s.setTickers);
+  const [tickers, setTickers] = useState<CryptoTicker[]>(storeTickers);
+  const [loading, setLoading] = useState(storeTickers.length === 0);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<'rank' | 'gainers' | 'losers' | 'volume' | 'ai'>('rank');
@@ -118,6 +121,7 @@ const HomeScreen: React.FC = () => {
         .filter(Boolean) as CryptoTicker[];
 
       setTickers(data);
+      setStoreTickers(data);
     } catch (e) {
       console.error('Ticker fetch error:', e);
     } finally {
