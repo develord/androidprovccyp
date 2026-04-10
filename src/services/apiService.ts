@@ -222,6 +222,17 @@ class APIService {
     }
   }
 
+  async registerFcmToken(fcmToken: string, platform: string = 'android'): Promise<void> {
+    try {
+      await this.client.post('/api/notifications/register', {
+        fcm_token: fcmToken,
+        platform,
+      });
+    } catch (error) {
+      console.error('Error registering FCM token:', error);
+    }
+  }
+
   clearCache(): void {
     this.cache.clear();
   }

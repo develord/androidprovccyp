@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { Linking } from 'react-native';
 import AuthService from '../services/authService';
 import SignalNotificationService from '../services/signalNotificationService';
+import PushNotificationService from '../services/pushNotificationService';
 import AnalyticsService from '../services/analyticsService';
 import { User } from '../types';
 import { BINANCE_OAUTH_CONFIG } from '../config/api';
@@ -56,6 +57,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (user) {
       SignalNotificationService.start();
+      PushNotificationService.init(); // Register FCM token for server push
     } else {
       SignalNotificationService.stop();
     }
