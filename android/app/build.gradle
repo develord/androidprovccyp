@@ -88,8 +88,8 @@ android {
         applicationId "com.cryptoadviserapp"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "1.0"
+        versionCode 3
+        versionName "1.0.2"
     }
     signingConfigs {
         debug {
@@ -99,11 +99,10 @@ android {
             keyPassword 'android'
         }
         release {
-            storeFile file('release-keystore.p12')
-            storePassword 'CryptoAdviser2026!'
-            keyAlias 'cryptoadviser'
-            keyPassword 'CryptoAdviser2026!'
-            storeType 'PKCS12'
+            storeFile file('cryptoxhunter-upload.jks')
+            storePassword 'CryptoXHunter2026!'
+            keyAlias 'cryptoxhunter'
+            keyPassword 'CryptoXHunter2026!'
         }
     }
     buildTypes {

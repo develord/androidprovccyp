@@ -1,0 +1,63 @@
+{
+  "project_info": {
+    "project_number": "890027280840",
+    "project_id": "cryptoadviser-ce7b6",
+    "storage_bucket": "cryptoadviser-ce7b6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:890027280840:android:6c8b71c71e5241f56958fd",
+        "android_client_info": {
+          "package_name": "com.cryptoadviserapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "890027280840-eu0hngb0h35tbi42fd2h89r73cr6m8qn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cryptoadviserapp",
+            "certificate_hash": "71333d28f3602b1c6b02a9a63d5be2fc90851762"
+          }
+        },
+        {
+          "client_id": "890027280840-h7rn38qvbh4ulqan7jf5aqvsjknm4enp.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cryptoadviserapp",
+            "certificate_hash": "ddd7f5441c55501d8aecdb7be72b2af20e5f2b20"
+          }
+        },
+        {
+          "client_id": "890027280840-lhh2nntggpi6henjsaavafpbq497sl72.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.cryptoadviserapp",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
+          "client_id": "890027280840-ujjd0r5o5pd9dn0j9vrcqp730pkm9166.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCYWGxzn5p-S1pSVSBOXVnIdkcVFwomoXo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "890027280840-ujjd0r5o5pd9dn0j9vrcqp730pkm9166.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

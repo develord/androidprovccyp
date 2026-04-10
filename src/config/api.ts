@@ -27,7 +27,7 @@ export const API_CONFIG = {
 
 // Google Sign-In Configuration
 export const GOOGLE_CONFIG = {
-  WEB_CLIENT_ID: '133497870542-bppv7o3ehb0mj3gh9k9k8me79clsfcoe.apps.googleusercontent.com',
+  WEB_CLIENT_ID: '890027280840-ujjd0r5o5pd9dn0j9vrcqp730pkm9166.apps.googleusercontent.com',
 };
 
 // Binance OAuth2 Configuration

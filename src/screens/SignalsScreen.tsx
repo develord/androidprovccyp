@@ -35,6 +35,8 @@ const COIN_IMAGES: Record<string, string> = {
   filecoin: 'https://assets.coingecko.com/coins/images/12817/small/filecoin.png',
 };
 
+const COINS = FALLBACK_COINS;
+
 type DirFilter = 'ALL' | 'LONG' | 'SHORT' | 'HOLD';
 
 const SignalsScreen: React.FC = () => {
