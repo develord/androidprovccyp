@@ -233,6 +233,13 @@ class APIService {
     }
   }
 
+  async getSignalHistory(coin: string | null = null): Promise<any> {
+    const params: any = { limit: 100 };
+    if (coin) params.coin = coin;
+    const { data } = await this.client.get('/api/notifications/history', { params });
+    return data;
+  }
+
   clearCache(): void {
     this.cache.clear();
   }

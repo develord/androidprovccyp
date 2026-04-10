@@ -69,7 +69,7 @@ const SettingsScreen: React.FC = () => {
           <View style={s.sectionCard}>
             <View style={s.sectionHeader}>
               <Icon name="account-circle" size={20} color={COLORS.primary} />
-              <Text style={s.sectionTitle}>Profile</Text>
+              <Text style={s.sectionTitle}>{t('profile')}</Text>
             </View>
 
             <View style={s.profileRow}>
@@ -144,7 +144,7 @@ const SettingsScreen: React.FC = () => {
           <View style={[s.statusRow, { borderBottomWidth: 0 }]}>
             <View style={s.statusLeft}>
               <Icon name="swap-horizontal" size={16} color={COLORS.textSecondary} />
-              <Text style={s.statusLabel}>Binance Demo</Text>
+              <Text style={s.statusLabel}>{t('binanceDemo')}</Text>
             </View>
             <Text style={[s.statusValue, { color: COLORS.primary }]}>{t('connected')}</Text>
           </View>
@@ -168,17 +168,17 @@ const SettingsScreen: React.FC = () => {
             </View>
             <View style={s.infoBox}>
               <Text style={s.infoLabel}>{t('timeframes')}</Text>
-              <Text style={s.infoValue}>Multi-Timeframe</Text>
+              <Text style={s.infoValue}>{t('multiTimeframe')}</Text>
             </View>
             <View style={s.infoBox}>
               <Text style={s.infoLabel}>{t('coins')}</Text>
-              <Text style={s.infoValue}>11 Crypto Assets</Text>
+              <Text style={s.infoValue}>{t('cryptoAssets')}</Text>
             </View>
           </View>
 
           <View style={s.featureRow}>
             <View style={[s.featureBadge, { borderColor: `${COLORS.success}30` }]}>
-              <Text style={[s.featureText, { color: COLORS.success }]}>Trailing Stop</Text>
+              <Text style={[s.featureText, { color: COLORS.success }]}>{t('trailingStop')}</Text>
             </View>
             <View style={[s.featureBadge, { borderColor: `${COLORS.primary}30` }]}>
               <Text style={[s.featureText, { color: COLORS.primary }]}>{t('dynamicTPSL')}</Text>
@@ -246,23 +246,23 @@ const SettingsScreen: React.FC = () => {
           style={s.logoutBtn}
           onPress={() => {
             Alert.alert(
-              'Logout',
-              'Are you sure you want to sign out?',
+              t('logout'),
+              t('logoutConfirm'),
               [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Logout', style: 'destructive', onPress: () => logout() },
+                { text: t('cancel'), style: 'cancel' },
+                { text: t('logout'), style: 'destructive', onPress: () => logout() },
               ],
             );
           }}
           activeOpacity={0.7}
         >
           <Icon name="logout" size={18} color={COLORS.danger} />
-          <Text style={s.logoutText}>Logout</Text>
+          <Text style={s.logoutText}>{t('logout')}</Text>
         </TouchableOpacity>
 
         <View style={s.footer}>
           <Text style={s.footerText}>CryptoXHunter</Text>
-          <Text style={s.footerSub}>XHunter AI Engine · Binance · Multi-Timeframe</Text>
+          <Text style={s.footerSub}>{t('footerEngine')}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

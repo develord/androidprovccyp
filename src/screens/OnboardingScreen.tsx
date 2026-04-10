@@ -1,4 +1,5 @@
-import React, { useRef, useState, useCallback } from 'react';
+import React, { useRef, useState, useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   View,
   Text,
@@ -31,31 +32,16 @@ interface Slide {
   subtitle: string;
 }
 
-const slides: Slide[] = [
-  {
-    id: '1',
-    icon: 'chart-line-variant',
-    title: 'AI Trading Signals',
-    subtitle:
-      'Get daily LONG & SHORT signals for 11+ cryptocurrencies, powered by advanced AI analysis',
-  },
-  {
-    id: '2',
-    icon: 'shield-check',
-    title: 'Technical Analysis',
-    subtitle:
-      'Real-time market data, trend detection, momentum indicators and risk management tools',
-  },
-  {
-    id: '3',
-    icon: 'rocket-launch',
-    title: 'Start Trading Smarter',
-    subtitle:
-      'Watch a short ad to unlock predictions. Track your portfolio and trade with confidence',
-  },
-];
+const SLIDE_ICONS = ['chart-line-variant', 'shield-check', 'rocket-launch'];
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
+  const { t } = useTranslation();
+
+  const slides: Slide[] = useMemo(() => [
+    { id: '1', icon: SLIDE_ICONS[0], title: t('onboardingTitle1'), subtitle: t('onboardingDesc1') },
+    { id: '2', icon: SLIDE_ICONS[1], title: t('onboardingTitle2'), subtitle: t('onboardingDesc2') },
+    { id: '3', icon: SLIDE_ICONS[2], title: t('onboardingTitle3'), subtitle: t('onboardingDesc3') },
+  ], [t]);
   const flatListRef = useRef<FlatList>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollX = useSharedValue(0);
@@ -134,7 +120,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
           activeOpacity={0.8}
           onPress={currentIndex === slides.length - 1 ? handleGetStarted : handleNext}>
           <Text style={styles.buttonText}>
-            {currentIndex === slides.length - 1 ? 'Get Started' : 'Next'}
+            {currentIndex === slides.length - 1 ? t('getStarted') : t('next')}
           </Text>
         </TouchableOpacity>
       </View>

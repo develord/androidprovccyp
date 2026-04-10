@@ -330,7 +330,7 @@ const DetailScreen: React.FC<Props> = ({ navigation, route }) => {
 
         {/* FOOTER */}
         <View style={s.footer}>
-          <Text style={s.footerText}>XHunter AI Engine · Binance Live · Multi-Timeframe</Text>
+          <Text style={s.footerText}>{t('footerEngine')}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

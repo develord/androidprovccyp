@@ -7,6 +7,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { useTranslation } from 'react-i18next';
 import { COLORS, SHADOWS } from '../config/theme';
 import { RootStackParamList } from '../types';
 import useAppStore from '../store/useAppStore';
@@ -69,12 +70,12 @@ interface CryptoTicker {
 }
 
 // Separate search bar component to prevent keyboard dismiss on FlatList re-render
-const SearchBar = React.memo(({ value, onChangeText }: { value: string; onChangeText: (t: string) => void }) => (
+const SearchBar = React.memo(({ value, onChangeText, placeholder }: { value: string; onChangeText: (t: string) => void; placeholder?: string }) => (
   <View style={st.searchBar}>
     <Text style={st.searchIcon}>🔍</Text>
     <TextInput
       style={st.searchInput}
-      placeholder="Search coin..."
+      placeholder={placeholder || 'Search coin...'}
       placeholderTextColor={COLORS.textDark}
       value={value}
       onChangeText={onChangeText}
@@ -90,6 +91,7 @@ const SearchBar = React.memo(({ value, onChangeText }: { value: string; onChange
 ));
 
 const HomeScreen: React.FC = () => {
+  const { t } = useTranslation();
   const navigation = useNavigation<NavProp>();
   const storeTickers = useAppStore(s => s.tickers);
   const setStoreTickers = useAppStore(s => s.setTickers);
@@ -232,7 +234,7 @@ const HomeScreen: React.FC = () => {
       <View style={st.titleRow}>
         <View>
           <Text style={st.title}>CryptoXHunter</Text>
-          <Text style={st.subtitle}>Market Overview</Text>
+          <Text style={st.subtitle}>{t('marketOverview')}</Text>
         </View>
         <View style={st.aiBadge}>
           <Text style={st.aiCount}>{AI_COINS.length}</Text>
@@ -241,7 +243,7 @@ const HomeScreen: React.FC = () => {
       </View>
 
       {/* Search — separate component to avoid keyboard dismiss */}
-      <SearchBar value={search} onChangeText={setSearch} />
+      <SearchBar value={search} onChangeText={setSearch} placeholder={t('searchCoin')} />
 
       {/* Sort/Filter chips */}
       <View style={st.sortRow}>

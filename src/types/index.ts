@@ -143,6 +143,7 @@ export type RootStackParamList = {
   Analysis: { coin: string; price: number; changePct: number };
   TradeDetail: { trade: VirtualTrade };
   Simulation: undefined;
+  SignalHistory: undefined;
 };
 
 // Credits Types

@@ -19,6 +19,7 @@
   "cryptoId": "معرف العملة",
   "symbol": "الرمز",
   "modelTimestamp": "التوقيت",
+
   "systemStatus": "حالة النظام",
   "predictionAPI": "واجهة التوقعات",
   "checking": "جاري الفحص...",
@@ -37,11 +38,13 @@
   "dynamicTPSL": "TP/SL ديناميكي",
   "smartFilters": "فلاتر ذكية",
   "engine": "المحرك",
+
   "language": "اللغة",
   "selectLanguage": "اختر اللغة",
   "aboutApp": "حول التطبيق",
   "appVersion": "الإصدار",
   "appDescription": "CryptoXHunter هو تطبيق إشارات تداول مدعوم بالذكاء الاصطناعي يوفر توقعات فورية باستخدام نماذج التعلم العميق المتقدمة.",
+
   "aiInsights": "تحليل الذكاء الاصطناعي",
   "analyzingCNN": "جاري تحليل بيانات السوق...",
   "apiUnavailable": "API غير متاح",
@@ -50,6 +53,7 @@
   "modelLabel": "المحرك",
   "dataLabel": "البيانات",
   "riskManagement": "إدارة المخاطر",
+
   "portfolio": "المحفظة",
   "virtualTrades": "صفقات افتراضية",
   "createTrade": "إنشاء صفقة",
@@ -93,10 +97,70 @@
   "tradeInformation": "معلومات الصفقة",
   "tradeId": "معرف الصفقة",
   "progressToTarget": "التقدم نحو الهدف",
+
   "news": "أخبار",
   "newsSubtitle": "تحليل المشاعر بالذكاء الاصطناعي",
   "newsLoading": "جاري تحميل الأخبار...",
   "noNews": "لا توجد أخبار متاحة",
   "technicalAnalysis": "التحليل الفني",
-  "languages": { "en": "English", "fr": "Français", "ar": "العربية", "es": "Español", "de": "Deutsch" }
+
+  "loginTagline": "إشارات تداول بالذكاء الاصطناعي",
+  "loginFeature1": "محرك تداول ذكي متقدم",
+  "loginFeature2": "إشارات LONG و SHORT فورية",
+  "loginFeature3": "إدارة المخاطر و TP/SL",
+  "signInGoogle": "تسجيل الدخول بـ Google",
+  "signInBinance": "تسجيل الدخول بـ Binance",
+  "comingSoon": "قريباً",
+  "loginFooter": "بتسجيل الدخول، أنت توافق على شروط الخدمة وسياسة الخصوصية",
+  "loginError": "فشل تسجيل الدخول",
+
+  "profile": "الملف الشخصي",
+  "binanceDemo": "Binance تجريبي",
+  "trailingStop": "وقف متحرك",
+  "multiTimeframe": "أطر زمنية متعددة",
+  "cryptoAssets": "11 عملة رقمية",
+  "logout": "تسجيل الخروج",
+  "logoutConfirm": "هل أنت متأكد من تسجيل الخروج؟",
+  "footerEngine": "XHunter AI · Binance · أطر زمنية متعددة",
+
+  "searchCoin": "بحث عن عملة...",
+  "marketOverview": "نظرة عامة على السوق",
+
+  "tapToUnlock": "اضغط للفتح",
+  "noActiveSignal": "لا توجد إشارة نشطة",
+  "insufficientCredits": "رصيد غير كافٍ",
+  "insufficientCreditsMsg": "تحتاج 3 أرصدة لعرض هذا التوقع. شاهد إعلان لكسب أرصدة!",
+  "watchAd": "إعلان +3",
+  "signalsSubtitle": "XHunter AI · LONG + SHORT",
+
+  "onboardingTitle1": "إشارات تداول ذكية",
+  "onboardingDesc1": "احصل على إشارات LONG و SHORT يومية لأكثر من 11 عملة رقمية بتحليل ذكاء اصطناعي متقدم",
+  "onboardingTitle2": "التحليل الفني",
+  "onboardingDesc2": "بيانات السوق الفورية، كشف الاتجاهات، مؤشرات الزخم وأدوات إدارة المخاطر",
+  "onboardingTitle3": "تداول بذكاء",
+  "onboardingDesc3": "شاهد إعلاناً قصيراً لفتح التوقعات. تابع محفظتك وتداول بثقة",
+  "getStarted": "ابدأ الآن",
+  "next": "التالي",
+
+  "signalHistory": "سجل الإشارات",
+  "signalHistorySubtitle": "الإشارات السابقة والأداء",
+  "signalStats": "إحصائيات الأداء",
+  "signalTotal": "الإجمالي",
+  "signalWins": "فوز",
+  "signalLosses": "خسارة",
+  "signalWinRate": "نسبة الفوز",
+  "signalAvgPnl": "متوسط الربح/الخسارة",
+  "signalTP": "جني الأرباح",
+  "signalSL": "وقف الخسارة",
+  "signalClosed": "مغلق",
+  "signalPending": "قيد الانتظار",
+  "noSignalHistory": "لا توجد إشارات بعد",
+
+  "languages": {
+    "en": "English",
+    "fr": "Français",
+    "ar": "العربية",
+    "es": "Español",
+    "de": "Deutsch"
+  }
 }

@@ -144,11 +144,11 @@ const SignalsScreen: React.FC = () => {
 
     // Insufficient credits
     Alert.alert(
-      'Insufficient Credits',
-      'You need 3 credits to view this prediction. Watch a short video to earn credits.',
+      t('insufficientCredits'),
+      t('insufficientCreditsMsg'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Watch Ad (+3)', onPress: () => watchAdAndEarn() },
+        { text: t('cancel'), style: 'cancel' },
+        { text: t('watchAd'), onPress: () => watchAdAndEarn() },
       ],
     );
   };
@@ -201,7 +201,7 @@ const SignalsScreen: React.FC = () => {
         {!unlocked ? (
           <View style={cs.lockedSection}>
             <Icon name="lock" size={28} color={COLORS.textDark} />
-            <Text style={cs.lockText}>Tap to unlock</Text>
+            <Text style={cs.lockText}>{t('tapToUnlock')}</Text>
             <Text style={cs.lockCost}>3 credits</Text>
           </View>
         ) : (
@@ -267,7 +267,7 @@ const SignalsScreen: React.FC = () => {
             {/* HOLD: show filter reasons */}
             {!hasSignal && (
               <View style={cs.holdSection}>
-                <Text style={cs.holdText}>No active signal</Text>
+                <Text style={cs.holdText}>{t('noActiveSignal')}</Text>
                 <View style={cs.filterReasons}>
                   {longFilter && (
                     <View style={cs.filterReasonBadge}>
@@ -348,12 +348,19 @@ const SignalsScreen: React.FC = () => {
       {/* Header */}
       <View style={st.header}>
         <View>
-          <Text style={st.title}>AI Signals</Text>
-          <Text style={st.subtitle}>XHunter AI Engine · LONG + SHORT</Text>
+          <Text style={st.title}>{t('signals')}</Text>
+          <Text style={st.subtitle}>{t('signalsSubtitle')}</Text>
         </View>
-        <View style={st.activeBadge}>
-          <Text style={st.activeCount}>{activeCount}</Text>
-          <Text style={st.activeLabel}>ACTIVE</Text>
+        <View style={{flexDirection: 'row', alignItems: 'center', gap: 10}}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('SignalHistory')}
+            style={{padding: 6, borderRadius: 8, backgroundColor: COLORS.card}}>
+            <Icon name="history" size={22} color={COLORS.primary} />
+          </TouchableOpacity>
+          <View style={st.activeBadge}>
+            <Text style={st.activeCount}>{activeCount}</Text>
+            <Text style={st.activeLabel}>ACTIVE</Text>
+          </View>
         </View>
       </View>
 
@@ -406,7 +413,7 @@ const SignalsScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Icon name="play-circle" size={16} color={COLORS.background} />
-          <Text style={st.watchAdText}>Watch Ad +3</Text>
+          <Text style={st.watchAdText}>{t('watchAd')}</Text>
         </TouchableOpacity>
       </View>
 

@@ -19,6 +19,7 @@
   "cryptoId": "Krypto-ID",
   "symbol": "Symbol",
   "modelTimestamp": "Zeitstempel",
+
   "systemStatus": "Systemstatus",
   "predictionAPI": "Vorhersage-API",
   "checking": "Prüfe...",
@@ -37,11 +38,13 @@
   "dynamicTPSL": "Dynamisches TP/SL",
   "smartFilters": "Intelligente Filter",
   "engine": "Engine",
+
   "language": "Sprache",
   "selectLanguage": "Sprache auswählen",
   "aboutApp": "Über die App",
   "appVersion": "Version",
   "appDescription": "CryptoXHunter ist eine KI-gestützte Trading-Signal-App mit fortschrittlichen Deep-Learning-Modellen.",
+
   "aiInsights": "KI-Analyse",
   "analyzingCNN": "KI analysiert Marktdaten...",
   "apiUnavailable": "API Nicht Verfügbar",
@@ -50,6 +53,7 @@
   "modelLabel": "Engine",
   "dataLabel": "Daten",
   "riskManagement": "Risikomanagement",
+
   "portfolio": "Portfolio",
   "virtualTrades": "Virtuelle Trades",
   "createTrade": "Trade Erstellen",
@@ -93,10 +97,70 @@
   "tradeInformation": "Trade-Informationen",
   "tradeId": "Trade-ID",
   "progressToTarget": "Fortschritt zum Ziel",
+
   "news": "Nachrichten",
   "newsSubtitle": "KI-Stimmungsanalyse",
   "newsLoading": "Nachrichten werden geladen...",
   "noNews": "Keine Nachrichten verfügbar",
   "technicalAnalysis": "Technische Analyse",
-  "languages": { "en": "English", "fr": "Français", "ar": "العربية", "es": "Español", "de": "Deutsch" }
+
+  "loginTagline": "KI-gestützte Handelssignale",
+  "loginFeature1": "Fortschrittliche KI-Trading-Engine",
+  "loginFeature2": "Echtzeit LONG & SHORT Signale",
+  "loginFeature3": "Risikomanagement & TP/SL",
+  "signInGoogle": "Mit Google anmelden",
+  "signInBinance": "Mit Binance anmelden",
+  "comingSoon": "Bald verfügbar",
+  "loginFooter": "Durch die Anmeldung stimmen Sie unseren Nutzungsbedingungen und Datenschutzrichtlinien zu",
+  "loginError": "Anmeldung fehlgeschlagen",
+
+  "profile": "Profil",
+  "binanceDemo": "Binance Demo",
+  "trailingStop": "Trailing Stop",
+  "multiTimeframe": "Multi-Timeframe",
+  "cryptoAssets": "11 Krypto-Assets",
+  "logout": "Abmelden",
+  "logoutConfirm": "Sind Sie sicher, dass Sie sich abmelden möchten?",
+  "footerEngine": "XHunter AI · Binance · Multi-Timeframe",
+
+  "searchCoin": "Suche...",
+  "marketOverview": "Marktübersicht",
+
+  "tapToUnlock": "Tippen zum Entsperren",
+  "noActiveSignal": "Kein aktives Signal",
+  "insufficientCredits": "Unzureichende Credits",
+  "insufficientCreditsMsg": "Sie benötigen 3 Credits für diese Vorhersage. Schauen Sie eine Werbung!",
+  "watchAd": "Werbung +3",
+  "signalsSubtitle": "XHunter AI · LONG + SHORT",
+
+  "onboardingTitle1": "KI-Handelssignale",
+  "onboardingDesc1": "Erhalten Sie tägliche LONG & SHORT Signale für 11+ Kryptowährungen mit fortschrittlicher KI-Analyse",
+  "onboardingTitle2": "Technische Analyse",
+  "onboardingDesc2": "Echtzeit-Marktdaten, Trenderkennung, Momentum-Indikatoren und Risikomanagement-Tools",
+  "onboardingTitle3": "Smarter Handeln",
+  "onboardingDesc3": "Schauen Sie eine kurze Werbung um Vorhersagen freizuschalten. Verfolgen Sie Ihr Portfolio und handeln Sie mit Vertrauen",
+  "getStarted": "Loslegen",
+  "next": "Weiter",
+
+  "signalHistory": "Signalverlauf",
+  "signalHistorySubtitle": "Vergangene Signale & Leistung",
+  "signalStats": "Leistungsstatistiken",
+  "signalTotal": "Gesamt",
+  "signalWins": "Gewonnen",
+  "signalLosses": "Verloren",
+  "signalWinRate": "Gewinnrate",
+  "signalAvgPnl": "Durchschn. P&L",
+  "signalTP": "Take Profit",
+  "signalSL": "Stop Loss",
+  "signalClosed": "Geschlossen",
+  "signalPending": "Ausstehend",
+  "noSignalHistory": "Noch keine Signale",
+
+  "languages": {
+    "en": "English",
+    "fr": "Français",
+    "ar": "العربية",
+    "es": "Español",
+    "de": "Deutsch"
+  }
 }

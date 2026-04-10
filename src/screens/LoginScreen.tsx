@@ -19,7 +19,7 @@ const LoginScreen: React.FC = () => {
     try {
       await signInWithGoogle();
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Google Sign-In failed');
+      Alert.alert('Error', error?.message || t('loginError'));
     } finally {
       setLoading(null);
     }
@@ -30,7 +30,7 @@ const LoginScreen: React.FC = () => {
     try {
       await signInWithBinance();
     } catch (error: any) {
-      Alert.alert('Error', error?.message || 'Binance login failed');
+      Alert.alert('Error', error?.message || t('loginError'));
     } finally {
       setLoading(null);
     }
@@ -47,22 +47,22 @@ const LoginScreen: React.FC = () => {
             <Icon name="chart-line-variant" size={48} color={COLORS.primary} />
           </View>
           <Text style={s.appName}>CryptoXHunter</Text>
-          <Text style={s.tagline}>AI-Powered Trading Signals</Text>
+          <Text style={s.tagline}>{t('loginTagline')}</Text>
         </View>
 
         {/* Features */}
         <View style={s.features}>
           <View style={s.featureRow}>
             <Icon name="brain" size={18} color={COLORS.primary} />
-            <Text style={s.featureText}>Advanced AI Trading Engine</Text>
+            <Text style={s.featureText}>{t('loginFeature1')}</Text>
           </View>
           <View style={s.featureRow}>
             <Icon name="chart-timeline-variant-shimmer" size={18} color={COLORS.success} />
-            <Text style={s.featureText}>Real-time LONG & SHORT Signals</Text>
+            <Text style={s.featureText}>{t('loginFeature2')}</Text>
           </View>
           <View style={s.featureRow}>
             <Icon name="shield-check" size={18} color={COLORS.warning} />
-            <Text style={s.featureText}>Risk Management & TP/SL</Text>
+            <Text style={s.featureText}>{t('loginFeature3')}</Text>
           </View>
         </View>
 
@@ -80,7 +80,7 @@ const LoginScreen: React.FC = () => {
             ) : (
               <>
                 <Icon name="google" size={22} color="#4285F4" />
-                <Text style={s.googleText}>Sign in with Google</Text>
+                <Text style={s.googleText}>{t('signInGoogle')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -92,14 +92,14 @@ const LoginScreen: React.FC = () => {
             activeOpacity={0.8}
           >
             <Icon name="currency-btc" size={22} color="#1E232980" />
-            <Text style={[s.binanceText, s.btnDisabledText]}>Sign in with Binance</Text>
-            <Text style={s.comingSoon}>Coming Soon</Text>
+            <Text style={[s.binanceText, s.btnDisabledText]}>{t('signInBinance')}</Text>
+            <Text style={s.comingSoon}>{t('comingSoon')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Footer */}
         <Text style={s.footer}>
-          By signing in, you agree to our Terms of Service and Privacy Policy
+          {t('loginFooter')}
         </Text>
       </View>
     </SafeAreaView>

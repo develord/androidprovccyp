@@ -21,6 +21,7 @@ import SimulationScreen from '../screens/SimulationScreen';
 import NewsScreen from '../screens/NewsScreen';
 import AnalysisScreen from '../screens/AnalysisScreen';
 import OnboardingScreen from '../screens/OnboardingScreen';
+import SignalHistoryScreen from '../screens/SignalHistoryScreen';
 import DatabaseService from '../services/databaseService';
 import AnalyticsService from '../services/analyticsService';
 
@@ -160,6 +161,7 @@ const AppNavigator: React.FC = () => {
             <Stack.Screen name="Analysis" component={AnalysisScreen} options={{ animation: 'fade_from_bottom' }} />
             <Stack.Screen name="TradeDetail" component={TradeDetailScreen} options={{ animation: 'slide_from_bottom' }} />
             <Stack.Screen name="Simulation" component={SimulationScreen} options={{ animation: 'fade_from_bottom' }} />
+            <Stack.Screen name="SignalHistory" component={SignalHistoryScreen} options={{ animation: 'slide_from_bottom' }} />
           </>
         )}
       </Stack.Navigator>
