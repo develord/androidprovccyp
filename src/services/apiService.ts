@@ -1,7 +1,15 @@
 // API Service - Prediction API
 import axios, { AxiosInstance } from 'axios';
+import { ToastAndroid, Platform } from 'react-native';
 import { API_CONFIG } from '../config/api';
 import AuthService from './authService';
+
+export class RateLimitError extends Error {
+  constructor(resource: string) {
+    super(`Server busy, retry in 1 minute (${resource})`);
+    this.name = 'RateLimitError';
+  }
+}
 
 // Types for API responses
 export interface CryptoPrediction {
@@ -59,10 +67,22 @@ class APIService {
       return config;
     });
 
-    // Response interceptor: auto-refresh on 401
+    // Response interceptor: handle 429 + auto-refresh on 401
+    let lastToast429 = 0;
     this.client.interceptors.response.use(
       response => response,
       async error => {
+        // Rate limit — show toast once per 30s
+        if (error.response?.status === 429) {
+          const now = Date.now();
+          if (now - lastToast429 > 30000) {
+            lastToast429 = now;
+            if (Platform.OS === 'android') {
+              ToastAndroid.show('⏳ Server busy — retry in 1 min', ToastAndroid.SHORT);
+            }
+          }
+        }
+
         const originalRequest = error.config;
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true;
@@ -79,7 +99,7 @@ class APIService {
   }
 
   /**
-   * Get all supported cryptos (BTC, ETH, SOL, DOGE, AVAX)
+   * Get all supported cryptos (BTC, ETH, SOL, AVAX, XRP, LINK, NEAR, FIL) - Synced with Live Bot
    */
   async getCryptosList(): Promise<{ cryptos: Record<string, CryptoInfo>; count: number }> {
     try {
@@ -103,17 +123,21 @@ class APIService {
       const response = await this.client.get(API_CONFIG.ENDPOINTS.PREDICTION(crypto));
       this.setCache(cacheKey, response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.response?.status === 429) {
+        console.warn(`[API] Rate limited for ${crypto}, retry in 1 min`);
+        throw new RateLimitError(crypto);
+      }
       console.error(`Error fetching prediction for ${crypto}:`, error);
       throw new Error(`Failed to fetch prediction for ${crypto}`);
     }
   }
 
   /**
-   * Get predictions for ALL cryptos
+   * Get predictions for ALL cryptos - SYNCED WITH LIVE BOT
    */
   async getAllPredictions(): Promise<CryptoPrediction[]> {
-    const cryptos = ['bitcoin', 'ethereum', 'solana', 'dogecoin', 'avalanche'];
+    const cryptos = ['bitcoin', 'ethereum', 'solana', 'avalanche', 'xrp', 'chainlink', 'near', 'filecoin'];
     const predictions = await Promise.all(
       cryptos.map(c => this.getPrediction(c).catch(() => null))
     );
@@ -165,7 +189,11 @@ class APIService {
         reward_amount: 3,
       });
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
+      if (error?.response?.status === 429) {
+        console.warn('[API] Rate limited for earn credits');
+        throw new RateLimitError('credits');
+      }
       console.error('Error earning credits:', error);
       throw new Error('Failed to earn credits');
     }
